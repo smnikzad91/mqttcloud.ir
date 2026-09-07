@@ -10,8 +10,6 @@ dashboard template. The original template's bulk SMS/voice-call notification
 feature (and its custom hardware bridge) has been removed, leaving the
 auth + wallet + CMS + admin scaffolding as the base for this product.
 
-![Dashboard preview](./banner.png)
-
 ## Stack
 
 * **Next.js 16** App Router + **React 19** + **TypeScript**
