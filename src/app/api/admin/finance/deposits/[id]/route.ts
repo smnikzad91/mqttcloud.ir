@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import Deposit from "@/models/Deposit";
 import User from "@/models/User";
+import { sendDepositStatusEmail } from "@/lib/mailer";
 
 export async function PATCH(
   req: NextRequest,
@@ -22,7 +23,6 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid status." }, { status: 400 });
 
   await connectDB();
-  void User;
 
   const deposit = await Deposit.findById(id);
   if (!deposit) return NextResponse.json({ error: "Deposit not found." }, { status: 404 });
@@ -31,8 +31,19 @@ export async function PATCH(
   deposit.adminNote = adminNote;
   await deposit.save();
 
-  if (status === "approved") {
-    await User.findByIdAndUpdate(deposit.userId, { $inc: { walletBalance: deposit.amount } });
+  const user = status === "approved"
+    ? await User.findByIdAndUpdate(deposit.userId, { $inc: { walletBalance: deposit.amount } }, { new: true })
+    : await User.findById(deposit.userId);
+
+  if (user?.email) {
+    sendDepositStatusEmail({
+      to:               user.email,
+      firstName:        user.firstName,
+      amount:           deposit.amount,
+      status,
+      adminNote,
+      interceptionCode: deposit.interceptionCode,
+    }).catch(console.error);
   }
 
   return NextResponse.json({ ok: true });

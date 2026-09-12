@@ -54,3 +54,36 @@ export async function sendMail({ to, subject, html }: SendMailOptions): Promise<
     return { status: false, message };
   }
 }
+
+export interface DepositStatusEmailData {
+  to:               string;
+  firstName:        string;
+  amount:           number;
+  status:           "approved" | "rejected";
+  adminNote?:       string;
+  interceptionCode: string;
+}
+
+export async function sendDepositStatusEmail(data: DepositStatusEmailData) {
+  const { to, firstName, amount, status, adminNote, interceptionCode } = data;
+  const approved = status === "approved";
+  const formattedAmount = amount.toLocaleString("fa-IR");
+
+  const subject = approved ? "واریز کیف پول شما تایید شد" : "واریز کیف پول شما رد شد";
+  const html = `
+    <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; font-size: 14px; line-height: 1.8; color: #1f2937;">
+      <p>${firstName} عزیز،</p>
+      <p>
+        درخواست واریز شما به مبلغ <b>${formattedAmount} تومان</b>
+        (کد پیگیری: <b>${interceptionCode}</b>)
+        ${approved
+          ? "تایید شد و مبلغ آن به کیف پول شما اضافه گردید."
+          : "متاسفانه رد شد."}
+      </p>
+      ${!approved && adminNote ? `<p>دلیل رد درخواست: ${adminNote}</p>` : ""}
+      <p>برای مشاهده جزئیات به پنل کاربری خود مراجعه کنید.</p>
+    </div>
+  `;
+
+  return sendMail({ to, subject, html });
+}
