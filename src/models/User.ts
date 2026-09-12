@@ -9,6 +9,8 @@ export interface IUser extends Document {
   walletBalance: number;
   avatar: string;
   phone: string;
+  resetPasswordTokenHash?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
 }
 
@@ -22,6 +24,8 @@ const UserSchema = new Schema<IUser>(
     walletBalance: { type: Number, default: 0 },
     avatar:        { type: String, default: "" },
     phone:         { type: String, default: "" },
+    resetPasswordTokenHash: { type: String, select: false },
+    resetPasswordExpires:   { type: Date,   select: false },
   },
   { timestamps: true }
 );

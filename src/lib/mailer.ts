@@ -1,5 +1,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 
+const SITE = (process.env.NEXTAUTH_URL ?? "https://mqttcloud.ir").replace(/\/$/, "");
+
 // Points at the self-hosted Postfix + OpenDKIM relay on this same server
 // (127.0.0.1:25, loopback-only, no auth needed — mynetworks trusts 127.0.0.1).
 // OpenDKIM signs outgoing mail for mqttcloud.ir automatically based on the
@@ -82,6 +84,27 @@ export async function sendDepositStatusEmail(data: DepositStatusEmailData) {
       </p>
       ${!approved && adminNote ? `<p>دلیل رد درخواست: ${adminNote}</p>` : ""}
       <p>برای مشاهده جزئیات به پنل کاربری خود مراجعه کنید.</p>
+    </div>
+  `;
+
+  return sendMail({ to, subject, html });
+}
+
+export interface PasswordResetEmailData {
+  to:        string;
+  firstName: string;
+  token:     string;
+}
+
+export async function sendPasswordResetEmail({ to, firstName, token }: PasswordResetEmailData) {
+  const link = `${SITE}/reset-password/${token}`;
+  const subject = "بازیابی رمز عبور mqttcloud.ir";
+  const html = `
+    <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; font-size: 14px; line-height: 1.8; color: #1f2937;">
+      <p>${firstName} عزیز،</p>
+      <p>درخواستی برای بازیابی رمز عبور حساب شما ثبت شده است. برای تعیین رمز عبور جدید روی لینک زیر کلیک کنید:</p>
+      <p><a href="${link}" style="color: #465fff;">${link}</a></p>
+      <p>این لینک تا ۱ ساعت دیگر معتبر است. اگر این درخواست را شما ثبت نکرده‌اید، این ایمیل را نادیده بگیرید.</p>
     </div>
   `;
 
