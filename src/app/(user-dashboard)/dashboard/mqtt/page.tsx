@@ -58,6 +58,7 @@ type Client = {
 const MQTT_HOST      = process.env.NEXT_PUBLIC_MQTT_HOST ?? "mqtt.mqttcloud.ir";
 const MQTT_PORT_TCP  = process.env.NEXT_PUBLIC_MQTT_PORT_TCP ?? "1883";
 const MQTT_PORT_TLS  = process.env.NEXT_PUBLIC_MQTT_PORT_TLS ?? "8883";
+const MQTT_WS_URL    = process.env.NEXT_PUBLIC_MQTT_WS_URL ?? `wss://${MQTT_HOST}/mqtt`;
 
 function StatusDot({ on }: { on: boolean }) {
   return (
@@ -222,6 +223,9 @@ export default function UserMqttPage() {
           <InfoField label={t("mqttHost")} value={MQTT_HOST} />
           <InfoField label={t("mqttPortPlain")} value={MQTT_PORT_TCP} />
           <InfoField label={t("mqttPortTls")} value={MQTT_PORT_TLS} />
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          <InfoField label={t("mqttWsUrl")} value={MQTT_WS_URL} />
         </div>
         <p className="text-xs text-gray-400 dark:text-gray-500">{t("mqttTopicHint")}</p>
       </div>
