@@ -5,6 +5,7 @@ import User from "@/models/User";
 import MqttUser from "@/models/MqttUser";
 import MqttClient from "@/models/MqttClient";
 import { PLAN_DEFS, SELF_SERVICE_PLANS, resolvePlanLimits, type PlanKey } from "@/lib/plans";
+import { assertUsageFitsPlan, PlanLimitError } from "@/lib/planEnforcement";
 
 export async function GET() {
   const session = await auth();
@@ -51,30 +52,26 @@ export async function PATCH(req: NextRequest) {
       { status: 400 }
     );
   }
+  // Paid plans go through nodepass checkout — this route only ever applies
+  // the switch for free, instantly, since there's nothing to collect.
+  if ((PLAN_DEFS[targetPlan].priceToman ?? 0) > 0) {
+    return NextResponse.json(
+      { error: "This plan requires payment. Use the checkout endpoint instead." },
+      { status: 400 }
+    );
+  }
 
   await connectDB();
 
   const mqttUserCount = await MqttUser.countDocuments({ userId: session.user.id });
-  const targetLimits = PLAN_DEFS[targetPlan];
+  const credentials = await MqttUser.find({ userId: session.user.id }).select("_id").lean();
+  const clientCounts = await Promise.all(credentials.map((c) => MqttClient.countDocuments({ mqttUserId: c._id })));
 
-  if (targetLimits.maxUsers !== null && mqttUserCount > targetLimits.maxUsers) {
-    return NextResponse.json(
-      { error: `You currently have ${mqttUserCount} MQTT credential set(s), which is more than this plan's limit of ${targetLimits.maxUsers}. Remove some before downgrading.` },
-      { status: 409 }
-    );
-  }
-
-  if (targetLimits.clientsPerUser !== null) {
-    const credentials = await MqttUser.find({ userId: session.user.id }).select("_id").lean();
-    const overLimit = await Promise.all(
-      credentials.map((c) => MqttClient.countDocuments({ mqttUserId: c._id }))
-    );
-    if (overLimit.some((count) => count > targetLimits.clientsPerUser!)) {
-      return NextResponse.json(
-        { error: `One or more of your credentials has more clients than this plan's limit of ${targetLimits.clientsPerUser}. Remove some before downgrading.` },
-        { status: 409 }
-      );
-    }
+  try {
+    assertUsageFitsPlan(targetPlan, mqttUserCount, clientCounts);
+  } catch (err) {
+    if (err instanceof PlanLimitError) return NextResponse.json({ error: err.message }, { status: 409 });
+    throw err;
   }
 
   await User.findByIdAndUpdate(session.user.id, {

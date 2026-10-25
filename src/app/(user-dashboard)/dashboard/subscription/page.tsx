@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useT } from "@/i18n/useT";
-
-type PlanKey = "free" | "basic" | "starter" | "enterprise";
+import { PLAN_DEFS, type PlanKey } from "@/lib/plans";
 
 interface PlanData {
   plan: PlanKey;
@@ -18,12 +17,26 @@ interface PlanData {
 
 const PLAN_ORDER: PlanKey[] = ["free", "basic", "starter", "enterprise"];
 
-const PLAN_DISPLAY: Record<PlanKey, { name: string; maxUsers: string; clientsPerUser: string; selfService: boolean }> = {
-  free:       { name: "پلن رایگان",  maxUsers: "۱", clientsPerUser: "۲ (در مجموع)", selfService: true },
-  basic:      { name: "پلن پایه",    maxUsers: "۳", clientsPerUser: "۳ به‌ازای هر اکانت (حداکثر ۹ کل)", selfService: true },
-  starter:    { name: "پلن استارتر", maxUsers: "۵", clientsPerUser: "۵ به‌ازای هر اکانت (حداکثر ۲۵ کل)", selfService: true },
-  enterprise: { name: "پلن پیشرفته", maxUsers: "سفارشی", clientsPerUser: "سفارشی", selfService: false },
+const PLAN_QUOTA_TEXT: Record<PlanKey, { maxUsers: string; clientsPerUser: string }> = {
+  free:       { maxUsers: "۱", clientsPerUser: "۲ (در مجموع)" },
+  basic:      { maxUsers: "۳", clientsPerUser: "۳ به‌ازای هر اکانت (حداکثر ۹ کل)" },
+  starter:    { maxUsers: "۵", clientsPerUser: "۵ به‌ازای هر اکانت (حداکثر ۲۵ کل)" },
+  enterprise: { maxUsers: "سفارشی", clientsPerUser: "سفارشی" },
 };
+
+const PLAN_DISPLAY: Record<PlanKey, { name: string; maxUsers: string; clientsPerUser: string; selfService: boolean; priceToman: number }> =
+  Object.fromEntries(
+    PLAN_ORDER.map((key) => [
+      key,
+      {
+        name: PLAN_DEFS[key].nameFa,
+        maxUsers: PLAN_QUOTA_TEXT[key].maxUsers,
+        clientsPerUser: PLAN_QUOTA_TEXT[key].clientsPerUser,
+        selfService: PLAN_DEFS[key].selfService,
+        priceToman: PLAN_DEFS[key].priceToman ?? 0,
+      },
+    ])
+  ) as Record<PlanKey, { name: string; maxUsers: string; clientsPerUser: string; selfService: boolean; priceToman: number }>;
 
 export default function SubscriptionPage() {
   const t = useT();
@@ -44,14 +57,21 @@ export default function SubscriptionPage() {
   const handleSwitch = async (plan: PlanKey) => {
     setSwitching(plan);
     try {
-      const res = await fetch("/api/user/plan", {
-        method: "PATCH",
+      const paid = PLAN_DISPLAY[plan].priceToman > 0;
+      const res = await fetch(paid ? "/api/user/plan/checkout" : "/api/user/plan", {
+        method: paid ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       });
       const json = await res.json();
       if (!res.ok) {
         toast.error(json.error ?? "خطا در تغییر پلن");
+        return;
+      }
+      if (paid) {
+        // Hand off to nodepass's hosted payment page — the plan itself only
+        // actually changes once the webhook confirms payment.
+        window.location.href = json.statusUrl;
         return;
       }
       toast.success("پلن شما با موفقیت تغییر کرد.");
@@ -139,6 +159,9 @@ export default function SubscriptionPage() {
                 }`}
               >
                 <p className="font-semibold text-gray-900 dark:text-white">{display.name}</p>
+                <p className="mt-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {display.priceToman > 0 ? `${display.priceToman.toLocaleString("fa-IR")} تومان / ماه` : plan === "enterprise" ? "سفارشی" : "رایگان"}
+                </p>
                 <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   {display.maxUsers} اکانت · {display.clientsPerUser}
                 </p>

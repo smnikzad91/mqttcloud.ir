@@ -44,6 +44,13 @@ export async function GET() {
           cardNumber: c.cardNumber ?? "",
           bankName:   c.bankName   ?? "",
         } : null,
+        payment: d.nodepassPaymentId ? {
+          trackingCode:     d.trackingCode ?? "",
+          payableRial:      d.payableRial ?? "",
+          payCardNumber:    d.payCardNumber ?? "",
+          payCardOwnerName: d.payCardOwnerName ?? "",
+          payCardBankName:  d.payCardBankName ?? "",
+        } : null,
       };
     })
   );

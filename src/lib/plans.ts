@@ -11,6 +11,7 @@ export interface PlanDef {
   maxUsers: number | null;      // null = custom/unset, resolved via admin override
   clientsPerUser: number | null;
   selfService: boolean;         // can a user switch to this plan themselves?
+  priceToman: number | null;    // null = no fixed price (enterprise — contact sales)
 }
 
 export const PLAN_DEFS: Record<PlanKey, PlanDef> = {
@@ -20,6 +21,7 @@ export const PLAN_DEFS: Record<PlanKey, PlanDef> = {
     maxUsers: 1,
     clientsPerUser: 2,
     selfService: true,
+    priceToman: 0,
   },
   basic: {
     key: "basic",
@@ -27,6 +29,7 @@ export const PLAN_DEFS: Record<PlanKey, PlanDef> = {
     maxUsers: 3,
     clientsPerUser: 3,
     selfService: true,
+    priceToman: 499000,
   },
   starter: {
     key: "starter",
@@ -34,6 +37,7 @@ export const PLAN_DEFS: Record<PlanKey, PlanDef> = {
     maxUsers: 5,
     clientsPerUser: 5,
     selfService: true,
+    priceToman: 999000,
   },
   enterprise: {
     key: "enterprise",
@@ -41,11 +45,18 @@ export const PLAN_DEFS: Record<PlanKey, PlanDef> = {
     maxUsers: null,
     clientsPerUser: null,
     selfService: false,
+    priceToman: null,
   },
 };
 
 export const SELF_SERVICE_PLANS: PlanKey[] = (Object.keys(PLAN_DEFS) as PlanKey[]).filter(
   (k) => PLAN_DEFS[k].selfService
+);
+
+// Self-service plans that actually cost something — these must go through
+// nodepass checkout rather than the instant free PATCH /api/user/plan.
+export const PAID_SELF_SERVICE_PLANS: PlanKey[] = SELF_SERVICE_PLANS.filter(
+  (k) => (PLAN_DEFS[k].priceToman ?? 0) > 0
 );
 
 export interface ResolvedLimits {

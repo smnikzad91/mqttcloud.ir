@@ -188,38 +188,13 @@ export default function FinancePage() {
   const [addingCard, setAddingCard]   = useState(false);
   const cardNumberRef = useRef<HTMLInputElement>(null);
 
-  // destination cards (admin-owned)
-  const [destCards, setDestCards]           = useState<Card[]>([]);
-  const [copiedDestId, setCopiedDestId]     = useState<string | null>(null);
-
-  const loadDestCards = () => {
-    fetch("/api/user/finance/admin-cards")
-      .then((r) => r.json())
-      .then((d) => setDestCards(Array.isArray(d) ? d : []))
-      .catch(() => {});
-  };
-
-  const handleCopyDest = (card: Card) => {
-    navigator.clipboard.writeText(card.cardNumber);
-    setCopiedDestId(card.id);
-    setTimeout(() => setCopiedDestId(null), 1500);
-  };
-
-  const formatCardNumber = (n: string) => n.replace(/(.{4})/g, "$1 ").trim();
-
   // deposits state
   const [deposits, setDeposits]           = useState<Deposit[]>([]);
   const [depositsLoading, setDepositsLoading] = useState(true);
   const [depositFilter, setDepositFilter] = useState<DepositFilter>("all");
   const [showDepositModal, setShowDepositModal] = useState(false);
-  const [selCardId, setSelCardId]         = useState("");
   const [depAmount, setDepAmount]         = useState("");
-  const [depDesc, setDepDesc]             = useState("");
-  const [depReceipt, setDepReceipt]       = useState("");
-  const [uploading, setUploading]         = useState(false);
   const [submittingDep, setSubmittingDep] = useState(false);
-  const [submittedCode, setSubmittedCode] = useState<string | null>(null);
-  const receiptFileRef = useRef<HTMLInputElement>(null);
   const amountRef = useRef<HTMLInputElement>(null);
 
   const loadCards = () => {
@@ -240,7 +215,7 @@ export default function FinancePage() {
       .finally(() => setDepositsLoading(false));
   };
 
-  useEffect(() => { queueMicrotask(() => { loadCards(); loadDeposits(); loadDestCards(); }); }, []);
+  useEffect(() => { queueMicrotask(() => { loadCards(); loadDeposits(); }); }, []);
 
   // ── Delete Card ─────────────────────────────────────────────────────────────
   const handleDeleteCard = async (id: string) => {
@@ -277,46 +252,33 @@ export default function FinancePage() {
     val.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ");
 
   // ── New Deposit ─────────────────────────────────────────────────────────────
+  // Deposits go through nodepass.ir: a real card-to-card payment confirmed by
+  // the receiving bank's deposit SMS. We only need an amount — nodepass
+  // assigns the receiving card per-payment and shows it on its own hosted
+  // status page, which is where this redirects to.
   const openDepositModal = () => {
-    if (cards.length === 0) { toast.error(t("addCardFirst")); return; }
-    setSelCardId(cards[0].id); setDepAmount(""); setDepDesc(""); setDepReceipt("");
-    setSubmittedCode(null);
+    setDepAmount("");
     setShowDepositModal(true);
     setTimeout(() => amountRef.current?.focus(), 80);
-  };
-
-  const handleReceiptSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res  = await fetch("/api/upload?folder=deposits", { method: "POST", body: fd });
-    const data = await res.json();
-    setUploading(false);
-    if (res.ok) setDepReceipt(data.url);
-    else toast.error(data.error || (isRTL ? "خطا در آپلود" : "Upload failed"));
   };
 
   const handleSubmitDeposit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = Number(depAmount.replace(/,/g, ""));
-    if (!selCardId)        { toast.error(t("depositCardRequired")); return; }
-    if (amount < 1000)     { toast.error(t("depositAmountMin")); return; }
+    if (amount < 10000) { toast.error(t("depositAmountMin")); return; }
     setSubmittingDep(true);
     const res  = await fetch("/api/user/finance/deposits", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardId: selCardId, amount, description: depDesc, receiptImage: depReceipt }),
+      body: JSON.stringify({ amount }),
     });
     const data = await res.json();
-    setSubmittingDep(false);
     if (res.ok) {
-      setSubmittedCode(data.interceptionCode);
-      loadDeposits();
+      window.location.href = data.statusUrl;
+      return;
     }
-    else        { toast.error(data.error || t("saveError")); }
+    setSubmittingDep(false);
+    toast.error(data.error || t("saveError"));
   };
 
   // ── Delete Deposit ───────────────────────────────────────────────────────────
@@ -414,36 +376,6 @@ export default function FinancePage() {
         )}
       </div>
 
-      {/* ── Deposit Destinations ───────────────────────────────────────────── */}
-      {destCards.length > 0 && (
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
-          <div className="mb-4">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-white">{t("depositDestinations")}</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t("depositDestinationsDesc")}</p>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            {destCards.map((card) => (
-              <div key={card.id} className="flex flex-col gap-2 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 p-4 text-white w-72 shadow-md">
-                <span className="text-xs font-medium opacity-75">{card.bankName}</span>
-                <div dir="ltr" className="font-mono text-lg tracking-widest">{formatCardNumber(card.cardNumber)}</div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs opacity-75">{card.ownerName}</span>
-                  <button
-                    onClick={() => handleCopyDest(card)}
-                    className="flex items-center gap-1 rounded-lg bg-white/20 hover:bg-white/30 px-2.5 py-1 text-xs font-medium transition-colors"
-                  >
-                    {copiedDestId === card.id ? (
-                      <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>{t("copied")}</>
-                    ) : (
-                      <><svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>{t("copyCardNumber")}</>
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* ── Deposits section ───────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
@@ -595,32 +527,6 @@ export default function FinancePage() {
       {/* ── New Deposit Modal ──────────────────────────────────────────────── */}
       <Modal isOpen={showDepositModal} onClose={() => !submittingDep && setShowDepositModal(false)} className="max-w-md mx-4 w-full" showCloseButton={false}>
         <div dir={isRTL ? "rtl" : "ltr"}>
-
-          {/* ── Success screen ── */}
-          {submittedCode ? (
-            <div className="flex flex-col items-center gap-5 px-6 py-10 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-500/10">
-                <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-                </svg>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-gray-900 dark:text-white">{t("depositSubmitted")}</p>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("interceptionCodeHint")}</p>
-              </div>
-              <div className="w-full rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-4">
-                <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{t("interceptionCode")}</p>
-                <p dir="ltr" className="font-mono text-xl font-bold tracking-widest text-gray-900 dark:text-white select-all">{submittedCode}</p>
-              </div>
-              <button
-                onClick={() => setShowDepositModal(false)}
-                className="w-full rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors"
-              >
-                {t("close")}
-              </button>
-            </div>
-          ) : (
-          <>
           <div className="relative overflow-hidden rounded-t-3xl bg-gradient-to-br from-brand-500 to-brand-700 px-6 py-7">
             <div className="absolute -top-6 -right-6 h-28 w-28 rounded-full bg-white/10" />
             <div className="relative flex items-start justify-between">
@@ -643,72 +549,21 @@ export default function FinancePage() {
 
           <form onSubmit={handleSubmitDeposit} className="space-y-4 px-6 py-5">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{t("depositCard")}</label>
-              <select
-                value={selCardId}
-                onChange={(e) => setSelCardId(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 outline-none transition-colors focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500 dark:focus:bg-gray-800"
-              >
-                {cards.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.bankName} — ****{c.cardNumber.slice(-4)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{t("depositAmount")}</label>
               <input
                 ref={amountRef}
                 type="number"
-                min={1000}
+                min={10000}
                 step={1000}
                 value={depAmount}
                 onChange={(e) => setDepAmount(e.target.value)}
                 placeholder={t("depositAmountPlaceholder")}
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 outline-none transition-colors focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500 dark:focus:bg-gray-800"
               />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{t("depositDescription")}</label>
-              <textarea
-                value={depDesc}
-                onChange={(e) => setDepDesc(e.target.value)}
-                placeholder={t("depositDescriptionPlaceholder")}
-                rows={2}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 outline-none transition-colors focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500 dark:focus:bg-gray-800 resize-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{t("depositReceipt")}</label>
-              <input ref={receiptFileRef} type="file" accept="image/*" className="hidden" onChange={handleReceiptSelect} />
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => receiptFileRef.current?.click()}
-                  disabled={uploading}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-                >
-                  {uploading ? (
-                    <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}><path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                  )}
-                  {isRTL ? "انتخاب تصویر رسید" : "Attach receipt"}
-                </button>
-                {depReceipt && (
-                  <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={depReceipt} alt="" className="h-full w-full object-cover" />
-                    <button type="button" onClick={() => setDepReceipt("")} className="absolute inset-0 flex items-center justify-center bg-black/50 text-white">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <p className="mt-1.5 text-xs text-gray-400 dark:text-gray-500">{t("depositNodepassHint")}</p>
             </div>
             <div className={`flex gap-3 pt-1 ${isRTL ? "flex-row-reverse" : ""}`}>
-              <button type="submit" disabled={submittingDep || uploading} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60 transition-colors">
+              <button type="submit" disabled={submittingDep} className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60 transition-colors">
                 {submittingDep ? (
                   <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>{t("submitting")}</>
                 ) : t("submitDeposit")}
@@ -718,7 +573,6 @@ export default function FinancePage() {
               </button>
             </div>
           </form>
-          </> )} {/* end !submittedCode */}
         </div>
       </Modal>
     </div>

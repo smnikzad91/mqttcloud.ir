@@ -11,9 +11,10 @@ import { Container } from "@/components/public/shared/Container";
 import { Button } from "@/components/public/shared/Button";
 import { AmbientGlow } from "@/components/public/shared/AmbientGlow";
 import { Accordion, type AccordionItemData } from "@/components/public/shared/Accordion";
+import { PLAN_DEFS } from "@/lib/plans";
 
 const trustItems = [
-  { icon: ShieldCheck, text: "پرداخت امن شاپرک" },
+  { icon: ShieldCheck, text: "پرداخت امن کارت‌به‌کارت" },
   { icon: RefreshCw, text: "لغو هر زمان" },
   { icon: CreditCard, text: "بدون کارت بانکی برای پلن رایگان" },
   { icon: Headset, text: "پشتیبانی واکنش‌گرا" },
@@ -21,12 +22,17 @@ const trustItems = [
 
 type PlanId = "free" | "basic" | "starter" | "enterprise";
 
+// The only real prices customers are ever charged — src/lib/plans.ts is the
+// single source of truth, used both here and by the actual nodepass
+// checkout. No separate "yearly" price exists: nothing in checkout bills
+// yearly, so showing one here would quote a discount nobody actually gets.
+const fmtToman = (n: number) => n.toLocaleString("fa-IR");
+
 const plans: {
   id: PlanId;
   name: string;
   badge?: string;
   monthlyPrice: string;
-  yearlyPrice: string;
   period: string;
   description: string;
   quota: string;
@@ -38,8 +44,7 @@ const plans: {
   {
     id: "free",
     name: "پلن رایگان",
-    monthlyPrice: "۰",
-    yearlyPrice: "۰",
+    monthlyPrice: fmtToman(PLAN_DEFS.free.priceToman ?? 0),
     period: "همیشه رایگان",
     description: "برای شروع و آزمایش بروکر با پروژه‌های کوچک.",
     quota: "۱ اکانت MQTT · حداکثر ۲ کلاینت",
@@ -57,8 +62,7 @@ const plans: {
     id: "basic",
     name: "پلن پایه",
     badge: "مناسب پروژه‌های کوچک",
-    monthlyPrice: "۴۹۹,۰۰۰",
-    yearlyPrice: "۳۹۹,۰۰۰",
+    monthlyPrice: fmtToman(PLAN_DEFS.basic.priceToman ?? 0),
     period: "تومان در ماه",
     description: "برای پروژه‌هایی که به چند اکانت و دستگاه بیشتر نیاز دارند.",
     quota: "تا ۳ اکانت MQTT · هر اکانت حداکثر ۳ کلاینت (حداکثر ۹ کلاینت کل)",
@@ -76,8 +80,7 @@ const plans: {
     id: "starter",
     name: "پلن استارتر",
     badge: "محبوب‌ترین پلن",
-    monthlyPrice: "۹۹۹,۰۰۰",
-    yearlyPrice: "۷۹۹,۰۰۰",
+    monthlyPrice: fmtToman(PLAN_DEFS.starter.priceToman ?? 0),
     period: "تومان در ماه",
     description: "برای استارتاپ‌ها و پروژه‌های IoT با مقیاس رو‌به‌رشد.",
     quota: "تا ۵ اکانت MQTT · هر اکانت حداکثر ۵ کلاینت (حداکثر ۲۵ کلاینت کل)",
@@ -97,7 +100,6 @@ const plans: {
     name: "پلن پیشرفته",
     badge: "سفارشی",
     monthlyPrice: "تماس بگیرید",
-    yearlyPrice: "تماس بگیرید",
     period: "",
     description: "تعداد اکانت و کلاینت دلخواه، متناسب با نیاز سازمان شما.",
     quota: "تعداد اکانت و کلاینت به‌صورت سفارشی و توافقی",
@@ -125,7 +127,6 @@ function ctaHref(planId: PlanId, loggedIn: boolean): string {
 export default function PricingPageClient() {
   const { data: session } = useSession();
   const loggedIn = !!session?.user;
-  const [yearly, setYearly] = useState(false);
   const [faqs, setFaqs] = useState<AccordionItemData[]>([]);
 
   useEffect(() => {
@@ -156,25 +157,6 @@ export default function PricingPageClient() {
           <p className="mt-4 text-lg text-gray-500 dark:text-gray-400">
             هر زمان که خواستید ارتقا یا کاهش دهید. بدون قرارداد بلندمدت.
           </p>
-
-          {/* Billing toggle */}
-          <div className="mt-8 inline-flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-1.5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-            <button
-              onClick={() => setYearly(false)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${!yearly ? "bg-gradient-to-r from-brand-500 to-theme-purple-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
-            >
-              ماهانه
-            </button>
-            <button
-              onClick={() => setYearly(true)}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all ${yearly ? "bg-gradient-to-r from-brand-500 to-theme-purple-500 text-white shadow-sm" : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"}`}
-            >
-              سالانه
-              <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${yearly ? "bg-white/20 text-white" : "bg-success-100 text-success-700 dark:bg-success-500/15 dark:text-success-400"}`}>
-                ۲۰٪ تخفیف
-              </span>
-            </button>
-          </div>
         </Reveal>
 
         {/* ─── Plans ─── */}
@@ -226,7 +208,7 @@ export default function PricingPageClient() {
                   {/* Price */}
                   <div className="mt-6 flex items-end gap-1.5">
                     <span className={`${isCustom ? "text-2xl" : "text-4xl"} font-extrabold leading-none tracking-tight ${plan.highlight ? "text-white" : "text-gray-900 dark:text-white"}`}>
-                      {isCustom ? plan.monthlyPrice : (yearly ? plan.yearlyPrice : plan.monthlyPrice)}
+                      {plan.monthlyPrice}
                     </span>
                     {!isCustom && (
                       <span className={`mb-1 text-sm font-medium ${plan.highlight ? "text-brand-100" : "text-gray-500 dark:text-gray-400"}`}>
@@ -234,11 +216,6 @@ export default function PricingPageClient() {
                       </span>
                     )}
                   </div>
-                  {yearly && !isFree && !isCustom && (
-                    <p className={`mt-1 text-xs ${plan.highlight ? "text-brand-200" : "text-gray-400 dark:text-gray-500"}`}>
-                      پرداخت سالانه — در مقابل {plan.monthlyPrice} ماهانه
-                    </p>
-                  )}
 
                   {/* Divider */}
                   <div className={`my-7 h-px ${plan.highlight ? "bg-white/15" : "bg-gray-100 dark:bg-gray-800"}`} />
