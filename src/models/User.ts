@@ -9,6 +9,9 @@ export interface IUser extends Document {
   walletBalance: number;
   avatar: string;
   phone: string;
+  plan: "free" | "basic" | "starter" | "enterprise";
+  planMaxUsers?: number | null;
+  planClientsPerUser?: number | null;
   resetPasswordTokenHash?: string;
   resetPasswordExpires?: Date;
   createdAt: Date;
@@ -24,6 +27,11 @@ const UserSchema = new Schema<IUser>(
     walletBalance: { type: Number, default: 0 },
     avatar:        { type: String, default: "" },
     phone:         { type: String, default: "" },
+    plan:          { type: String, enum: ["free", "basic", "starter", "enterprise"], default: "free" },
+    // Overrides the plan's built-in numbers — mainly how an admin configures
+    // the sales-negotiated "enterprise" tier, which has no numbers of its own.
+    planMaxUsers:       { type: Number, default: null },
+    planClientsPerUser: { type: Number, default: null },
     resetPasswordTokenHash: { type: String, select: false },
     resetPasswordExpires:   { type: Date,   select: false },
   },

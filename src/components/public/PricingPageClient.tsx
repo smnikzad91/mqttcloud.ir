@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Check, CreditCard, Headset, RefreshCw, ShieldCheck } from "lucide-react";
 import { Reveal } from "@/components/public/shared/Reveal";
 import { Stagger, StaggerItem } from "@/components/public/shared/Stagger";
@@ -18,61 +19,97 @@ const trustItems = [
   { icon: Headset, text: "پشتیبانی واکنش‌گرا" },
 ];
 
-const plans = [
+type PlanId = "free" | "basic" | "starter" | "enterprise";
+
+const plans: {
+  id: PlanId;
+  name: string;
+  badge?: string;
+  monthlyPrice: string;
+  yearlyPrice: string;
+  period: string;
+  description: string;
+  quota: string;
+  features: string[];
+  cta: string;
+  highlight: boolean;
+  accent: string;
+}[] = [
   {
-    name: "رایگان",
+    id: "free",
+    name: "پلن رایگان",
     monthlyPrice: "۰",
     yearlyPrice: "۰",
     period: "همیشه رایگان",
     description: "برای شروع و آزمایش بروکر با پروژه‌های کوچک.",
+    quota: "۱ اکانت MQTT · حداکثر ۲ کلاینت",
     features: [
-      "۱ اکانت MQTT",
-      "تا ۳ دستگاه متصل",
-      "اتصال امن با TLS",
+      "۱ اکانت MQTT (sub-user)",
+      "حداکثر ۲ کلاینت متصل در مجموع",
+      "اتصال امن با TLS و WebSocket",
       "۷ روز تاریخچه فعالیت اتصال",
     ],
     cta: "شروع رایگان",
-    href: "/signup",
     highlight: false,
     accent: "border-t-gray-200 dark:border-t-gray-700",
   },
   {
-    name: "حرفه‌ای",
-    monthlyPrice: "۱۴۹,۰۰۰",
-    yearlyPrice: "۱۱۹,۰۰۰",
+    id: "basic",
+    name: "پلن پایه",
+    badge: "مناسب پروژه‌های کوچک",
+    monthlyPrice: "۹۹,۰۰۰",
+    yearlyPrice: "۷۹,۰۰۰",
     period: "تومان در ماه",
-    description: "برای پروژه‌ها و استارتاپ‌هایی با تعداد دستگاه بیشتر.",
+    description: "برای پروژه‌هایی که به چند اکانت و دستگاه بیشتر نیاز دارند.",
+    quota: "تا ۳ اکانت MQTT · هر اکانت حداکثر ۳ کلاینت (حداکثر ۹ کلاینت کل)",
     features: [
-      "۱۰ اکانت MQTT",
-      "تا ۵۰ دستگاه به‌ازای هر اکانت",
+      "تا ۳ اکانت MQTT (sub-user)",
+      "هر اکانت حداکثر ۳ کلاینت — حداکثر ۹ کلاینت در مجموع",
+      "۳۰ روز تاریخچه فعالیت اتصال",
+      "پشتیبانی ایمیلی",
+    ],
+    cta: "فعال‌سازی پلن پایه",
+    highlight: false,
+    accent: "border-t-blue-400 dark:border-t-blue-500",
+  },
+  {
+    id: "starter",
+    name: "پلن استارتر",
+    badge: "محبوب‌ترین پلن",
+    monthlyPrice: "۲۴۹,۰۰۰",
+    yearlyPrice: "۱۹۹,۰۰۰",
+    period: "تومان در ماه",
+    description: "برای استارتاپ‌ها و پروژه‌های IoT با مقیاس رو‌به‌رشد.",
+    quota: "تا ۵ اکانت MQTT · هر اکانت حداکثر ۵ کلاینت (حداکثر ۲۵ کلاینت کل)",
+    features: [
+      "تا ۵ اکانت MQTT (sub-user)",
+      "هر اکانت حداکثر ۵ کلاینت — حداکثر ۲۵ کلاینت در مجموع",
       "۳۰ روز تاریخچه فعالیت اتصال",
       "دسترسی API برای مدیریت اکانت‌ها",
-      "گزارش فعالیت پیشرفته",
       "پشتیبانی اولویت‌دار",
     ],
-    cta: "۱۴ روز رایگان امتحان کنید",
-    href: "/signup",
+    cta: "فعال‌سازی پلن استارتر",
     highlight: true,
     accent: "border-t-brand-500",
   },
   {
-    name: "سازمانی",
-    monthlyPrice: "۴۴۹,۰۰۰",
-    yearlyPrice: "۳۵۹,۰۰۰",
-    period: "تومان در ماه",
-    description: "برای سازمان‌ها و پروژه‌های صنعتی با نیاز مقیاس بالا.",
+    id: "enterprise",
+    name: "پلن پیشرفته",
+    badge: "سفارشی",
+    monthlyPrice: "تماس بگیرید",
+    yearlyPrice: "تماس بگیرید",
+    period: "",
+    description: "تعداد اکانت و کلاینت دلخواه، متناسب با نیاز سازمان شما.",
+    quota: "تعداد اکانت و کلاینت به‌صورت سفارشی و توافقی",
     features: [
-      "اکانت و دستگاه نامحدود",
-      "همه امکانات پلن حرفه‌ای",
-      "بروکر اختصاصی (Dedicated Cluster)",
-      "SLA تضمینی ۹۹.۹٪",
-      "پشتیبانی اختصاصی ۲۴/۷",
-      "ورود با SSO سازمانی",
+      "تعداد اکانت MQTT دلخواه",
+      "تعداد کلاینت به‌ازای هر اکانت دلخواه",
+      "بروکر اختصاصی (Dedicated Cluster) در صورت نیاز",
+      "SLA تضمینی و پشتیبانی اختصاصی",
     ],
     cta: "تماس با فروش",
-    href: "/contact",
     highlight: false,
-    accent: "border-t-gray-800 dark:border-t-gray-600",
+    accent: "border-t-purple-500 dark:border-t-purple-400",
   },
 ];
 
@@ -80,7 +117,14 @@ function PlanCheck({ bright }: { bright?: boolean }) {
   return <Check className={`mt-0.5 h-4 w-4 shrink-0 ${bright ? "text-brand-100" : "text-brand-500"}`} strokeWidth={3} aria-hidden="true" />;
 }
 
+function ctaHref(planId: PlanId, loggedIn: boolean): string {
+  if (planId === "enterprise") return "/contact";
+  return loggedIn ? "/dashboard/subscription" : "/signup";
+}
+
 export default function PricingPageClient() {
+  const { data: session } = useSession();
+  const loggedIn = !!session?.user;
   const [yearly, setYearly] = useState(false);
   const [faqs, setFaqs] = useState<AccordionItemData[]>([]);
 
@@ -134,76 +178,95 @@ export default function PricingPageClient() {
         </Reveal>
 
         {/* ─── Plans ─── */}
-        <Stagger className="mt-12 grid gap-6 lg:grid-cols-3 lg:items-start" stagger={0.1}>
-          {plans.map((plan) => (
-            <StaggerItem
-              key={plan.name}
-              className={`relative flex flex-col overflow-hidden rounded-2xl border-t-4 ${plan.accent} ${
-                plan.highlight
-                  ? "border border-brand-500 bg-gradient-to-br from-brand-500 to-theme-purple-500 shadow-2xl shadow-brand-500/25 lg:-translate-y-5"
-                  : "border border-gray-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
-              }`}
-            >
-              {/* Popular badge */}
-              {plan.highlight && (
-                <div className="flex justify-center pt-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-success-400" />
-                    محبوب‌ترین پلن
-                  </span>
-                </div>
-              )}
-
-              <div className={`flex flex-1 flex-col p-8 ${plan.highlight && "pt-5"}`}>
-                {/* Plan name + desc */}
-                <h2 className={`text-lg font-bold ${plan.highlight ? "text-white" : "text-gray-900 dark:text-white"}`}>
-                  {plan.name}
-                </h2>
-                <p className={`mt-1.5 text-sm leading-relaxed ${plan.highlight ? "text-brand-100" : "text-gray-500 dark:text-gray-400"}`}>
-                  {plan.description}
-                </p>
-
-                {/* Price */}
-                <div className="mt-6 flex items-end gap-1.5">
-                  <span className={`text-4xl font-extrabold leading-none tracking-tight ${plan.highlight ? "text-white" : "text-gray-900 dark:text-white"}`}>
-                    {yearly ? plan.yearlyPrice : plan.monthlyPrice}
-                  </span>
-                  <span className={`mb-1 text-sm font-medium ${plan.highlight ? "text-brand-100" : "text-gray-500 dark:text-gray-400"}`}>
-                    {plan.monthlyPrice === "۰" ? plan.period : `تومان / ماه`}
-                  </span>
-                </div>
-                {yearly && plan.monthlyPrice !== "۰" && (
-                  <p className={`mt-1 text-xs ${plan.highlight ? "text-brand-200" : "text-gray-400 dark:text-gray-500"}`}>
-                    پرداخت سالانه — در مقابل {plan.monthlyPrice} ماهانه
-                  </p>
+        <Stagger className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-start" stagger={0.1}>
+          {plans.map((plan) => {
+            const isFree = plan.id === "free";
+            const isCustom = plan.id === "enterprise";
+            return (
+              <StaggerItem
+                key={plan.id}
+                className={`relative flex flex-col overflow-hidden rounded-2xl border-t-4 ${plan.accent} ${
+                  plan.highlight
+                    ? "border border-brand-500 bg-gradient-to-br from-brand-500 to-theme-purple-500 shadow-2xl shadow-brand-500/25 lg:-translate-y-5"
+                    : "border border-gray-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
+                }`}
+              >
+                {/* Badge */}
+                {plan.badge && (
+                  <div className="flex justify-center pt-4">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold backdrop-blur-sm ${
+                      plan.highlight
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                    }`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${plan.highlight ? "bg-success-400" : "bg-brand-500"}`} />
+                      {plan.badge}
+                    </span>
+                  </div>
                 )}
 
-                {/* Divider */}
-                <div className={`my-7 h-px ${plan.highlight ? "bg-white/15" : "bg-gray-100 dark:bg-gray-800"}`} />
+                <div className={`flex flex-1 flex-col p-8 ${plan.badge && "pt-5"}`}>
+                  {/* Plan name + desc */}
+                  <h2 className={`text-lg font-bold ${plan.highlight ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                    {plan.name}
+                  </h2>
+                  <p className={`mt-1.5 text-sm leading-relaxed ${plan.highlight ? "text-brand-100" : "text-gray-500 dark:text-gray-400"}`}>
+                    {plan.description}
+                  </p>
 
-                {/* Features */}
-                <ul className="flex-1 space-y-3.5">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm">
-                      <PlanCheck bright={plan.highlight} />
-                      <span className={plan.highlight ? "text-brand-50" : "text-gray-600 dark:text-gray-300"}>
-                        {f}
+                  {/* Quota breakdown */}
+                  <p className={`mt-3 rounded-lg px-3 py-2 text-xs font-semibold ${
+                    plan.highlight
+                      ? "bg-white/10 text-brand-50"
+                      : "bg-gray-50 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  }`}>
+                    {plan.quota}
+                  </p>
+
+                  {/* Price */}
+                  <div className="mt-6 flex items-end gap-1.5">
+                    <span className={`${isCustom ? "text-2xl" : "text-4xl"} font-extrabold leading-none tracking-tight ${plan.highlight ? "text-white" : "text-gray-900 dark:text-white"}`}>
+                      {isCustom ? plan.monthlyPrice : (yearly ? plan.yearlyPrice : plan.monthlyPrice)}
+                    </span>
+                    {!isCustom && (
+                      <span className={`mb-1 text-sm font-medium ${plan.highlight ? "text-brand-100" : "text-gray-500 dark:text-gray-400"}`}>
+                        {isFree ? plan.period : "تومان / ماه"}
                       </span>
-                    </li>
-                  ))}
-                </ul>
+                    )}
+                  </div>
+                  {yearly && !isFree && !isCustom && (
+                    <p className={`mt-1 text-xs ${plan.highlight ? "text-brand-200" : "text-gray-400 dark:text-gray-500"}`}>
+                      پرداخت سالانه — در مقابل {plan.monthlyPrice} ماهانه
+                    </p>
+                  )}
 
-                {/* CTA */}
-                <Button
-                  href={plan.href}
-                  size="lg"
-                  className={`mt-8 w-full ${plan.highlight ? "bg-none bg-white text-brand-600 hover:bg-brand-50" : ""}`}
-                >
-                  {plan.cta}
-                </Button>
-              </div>
-            </StaggerItem>
-          ))}
+                  {/* Divider */}
+                  <div className={`my-7 h-px ${plan.highlight ? "bg-white/15" : "bg-gray-100 dark:bg-gray-800"}`} />
+
+                  {/* Features */}
+                  <ul className="flex-1 space-y-3.5">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2.5 text-sm">
+                        <PlanCheck bright={plan.highlight} />
+                        <span className={plan.highlight ? "text-brand-50" : "text-gray-600 dark:text-gray-300"}>
+                          {f}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  <Button
+                    href={ctaHref(plan.id, loggedIn)}
+                    size="lg"
+                    className={`mt-8 w-full ${plan.highlight ? "bg-none bg-white text-brand-600 hover:bg-brand-50" : ""}`}
+                  >
+                    {plan.cta}
+                  </Button>
+                </div>
+              </StaggerItem>
+            );
+          })}
         </Stagger>
 
         {/* Trust strip */}

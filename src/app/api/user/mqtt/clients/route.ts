@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import MqttClient from "@/models/MqttClient";
 import MqttUser from "@/models/MqttUser";
+import { assertCanCreateMqttClient, PlanLimitError } from "@/lib/planEnforcement";
 
 export async function GET() {
   const session = await auth();
@@ -49,8 +50,12 @@ export async function POST(req: NextRequest) {
   if (!credential) return NextResponse.json({ error: "Credential not found." }, { status: 404 });
 
   const count = await MqttClient.countDocuments({ mqttUserId });
-  if (count >= credential.maxConnection)
-    return NextResponse.json({ error: "This credential has reached its device limit." }, { status: 403 });
+  try {
+    await assertCanCreateMqttClient(session.user.id, count);
+  } catch (err) {
+    if (err instanceof PlanLimitError) return NextResponse.json({ error: err.message }, { status: 403 });
+    throw err;
+  }
 
   const existing = await MqttClient.findOne({ mqttUserId, clientName });
   if (existing) return NextResponse.json({ error: "Client id already exists for this credential." }, { status: 409 });

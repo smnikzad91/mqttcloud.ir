@@ -1,4 +1,5 @@
 import mongoose, { Document, Model, Schema, Types } from "mongoose";
+import { assertCanCreateMqttClient } from "@/lib/planEnforcement";
 
 // A device/client identity registered under an MqttUser credential set.
 // The broker service only lets a TCP client connect as `clientName` if a
@@ -26,6 +27,16 @@ const MqttClientSchema = new Schema<IMqttClient>(
 
 // A client id must be unique within its credential set, not globally.
 MqttClientSchema.index({ mqttUserId: 1, clientName: 1 }, { unique: true });
+
+// Backstop for the API-level check in the clients route — the plan's
+// clientsPerUser quota applies per MqttUser credential set, resolved from
+// the owning User (not the credential), so it stays correct even if the
+// account's plan changes after the credential was created.
+MqttClientSchema.pre("save", async function () {
+  if (!this.isNew) return;
+  const count = await mongoose.models.MqttClient.countDocuments({ mqttUserId: this.mqttUserId });
+  await assertCanCreateMqttClient(this.userId.toString(), count);
+});
 
 delete mongoose.models["MqttClient"];
 const MqttClient: Model<IMqttClient> = mongoose.model<IMqttClient>("MqttClient", MqttClientSchema);

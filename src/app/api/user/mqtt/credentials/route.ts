@@ -3,6 +3,9 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import MqttUser from "@/models/MqttUser";
+import User from "@/models/User";
+import { assertCanCreateMqttUser, PlanLimitError } from "@/lib/planEnforcement";
+import { resolvePlanLimits } from "@/lib/plans";
 
 const USERNAME_RE = /^[a-zA-Z0-9_-]{3,32}$/;
 
@@ -45,11 +48,23 @@ export async function POST(req: NextRequest) {
   const existing = await MqttUser.findOne({ username });
   if (existing) return NextResponse.json({ error: "Username already taken." }, { status: 409 });
 
+  const currentCount = await MqttUser.countDocuments({ userId: session.user.id });
+  try {
+    await assertCanCreateMqttUser(session.user.id, currentCount);
+  } catch (err) {
+    if (err instanceof PlanLimitError) return NextResponse.json({ error: err.message }, { status: 403 });
+    throw err;
+  }
+
+  const owner = await User.findById(session.user.id).select("plan planMaxUsers planClientsPerUser").lean();
+  const { clientsPerUser } = resolvePlanLimits(owner ?? {});
+
   const hashed = await bcrypt.hash(password, 12);
   const credential = await MqttUser.create({
     userId: session.user.id,
     username,
     password: hashed,
+    maxConnection: clientsPerUser,
   });
 
   return NextResponse.json(

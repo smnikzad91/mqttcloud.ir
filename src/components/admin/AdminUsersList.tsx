@@ -12,6 +12,8 @@ import { Modal } from "@/components/ui/modal";
 import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
 import { toast } from "sonner";
 
+type PlanKey = "free" | "basic" | "starter" | "enterprise";
+
 interface UserRow {
   id: string;
   firstName: string;
@@ -21,14 +23,25 @@ interface UserRow {
   walletBalance: number;
   avatar: string;
   phone: string;
+  plan: PlanKey;
+  planMaxUsers: number | null;
+  planClientsPerUser: number | null;
   createdAt: string;
 }
+
+const PLAN_BADGE_CLASS: Record<PlanKey, string> = {
+  free: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+  basic: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400",
+  starter: "bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-400",
+  enterprise: "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400",
+};
 
 type GridCtx = {
   isRTL: boolean;
   onEdit: (user: UserRow) => void;
   onDelete: (id: string, name: string) => void;
   labels: { edit: string; del: string };
+  planLabels: Record<PlanKey, string>;
 };
 
 // ── Themes ─────────────────────────────────────────────────────────────────────
@@ -86,6 +99,15 @@ function RoleCell({ data }: { data: UserRow }) {
   return data.role === "admin"
     ? <span className="rounded-lg bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">Admin</span>
     : <span className="rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-400">User</span>;
+}
+
+function PlanCell({ data, context }: { data: UserRow; context: GridCtx }) {
+  const plan = data.plan ?? "free";
+  return (
+    <span className={`rounded-lg px-2.5 py-1 text-xs font-semibold ${PLAN_BADGE_CLASS[plan]}`}>
+      {context.planLabels[plan]}
+    </span>
+  );
 }
 
 function PhoneCell({ value }: { value: string }) {
@@ -163,6 +185,9 @@ export default function AdminUsersList() {
   const [editTarget, setEditTarget] = useState<UserRow | null>(null);
   const [editRole, setEditRole] = useState<"admin" | "user">("user");
   const [editPhone, setEditPhone] = useState("");
+  const [editPlan, setEditPlan] = useState<PlanKey>("free");
+  const [editPlanMaxUsers, setEditPlanMaxUsers] = useState("");
+  const [editPlanClientsPerUser, setEditPlanClientsPerUser] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
@@ -192,6 +217,9 @@ export default function AdminUsersList() {
     setEditTarget(user);
     setEditRole(user.role);
     setEditPhone(user.phone ?? "");
+    setEditPlan(user.plan ?? "free");
+    setEditPlanMaxUsers(user.planMaxUsers != null ? String(user.planMaxUsers) : "");
+    setEditPlanClientsPerUser(user.planClientsPerUser != null ? String(user.planClientsPerUser) : "");
     setEditError("");
   };
 
@@ -203,7 +231,13 @@ export default function AdminUsersList() {
     const res = await fetch(`/api/admin/users/${editTarget.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ role: editRole, phone: editPhone }),
+      body: JSON.stringify({
+        role: editRole,
+        phone: editPhone,
+        plan: editPlan,
+        planMaxUsers: editPlan === "enterprise" && editPlanMaxUsers !== "" ? Number(editPlanMaxUsers) : null,
+        planClientsPerUser: editPlan === "enterprise" && editPlanClientsPerUser !== "" ? Number(editPlanClientsPerUser) : null,
+      }),
     });
     setEditSaving(false);
     if (!res.ok) {
@@ -238,6 +272,12 @@ export default function AdminUsersList() {
       edit: t("userEdit"),
       del:  t("userDelete"),
     },
+    planLabels: {
+      free:       t("planLabelFree"),
+      basic:      t("planLabelBasic"),
+      starter:    t("planLabelStarter"),
+      enterprise: t("planLabelEnterprise"),
+    },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [isRTL, lang]);
 
@@ -246,6 +286,7 @@ export default function AdminUsersList() {
       { headerName: "#", width: 60, sortable: false, filter: false, valueGetter: (p) => (p.node?.rowIndex ?? 0) + 1 },
       { field: "firstName", headerName: t("colUser"), flex: 2, minWidth: 200, sortable: true, filter: false, cellRenderer: NameCell },
       { field: "role", headerName: t("colRole"), width: 110, sortable: true, filter: false, cellRenderer: RoleCell },
+      { field: "plan", headerName: t("colPlan"), width: 120, sortable: true, filter: false, cellRenderer: PlanCell },
       { field: "phone", headerName: t("colPhone"), width: 150, sortable: false, filter: false, cellRenderer: PhoneCell },
       { field: "walletBalance", headerName: t("colWallet"), width: 130, sortable: true, filter: false, cellRenderer: WalletCell },
       { field: "createdAt", headerName: t("colJoined"), width: 150, sortable: true, filter: false, cellRenderer: DateCell },
@@ -341,6 +382,47 @@ export default function AdminUsersList() {
               className={inputClass}
             />
           </div>
+
+          <div>
+            <label className={labelClass}>{t("userEditPlan")}</label>
+            <select
+              value={editPlan}
+              onChange={(e) => setEditPlan(e.target.value as PlanKey)}
+              className={inputClass}
+            >
+              <option value="free">{t("planLabelFree")}</option>
+              <option value="basic">{t("planLabelBasic")}</option>
+              <option value="starter">{t("planLabelStarter")}</option>
+              <option value="enterprise">{t("planLabelEnterprise")}</option>
+            </select>
+          </div>
+
+          {editPlan === "enterprise" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>{t("userEditPlanMaxUsers")}</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={editPlanMaxUsers}
+                  onChange={(e) => setEditPlanMaxUsers(e.target.value)}
+                  placeholder={t("userEditPlanBlankHint")}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>{t("userEditPlanClientsPerUser")}</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={editPlanClientsPerUser}
+                  onChange={(e) => setEditPlanClientsPerUser(e.target.value)}
+                  placeholder={t("userEditPlanBlankHint")}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          )}
 
           {editError && <p className="text-xs text-red-500">{editError}</p>}
 

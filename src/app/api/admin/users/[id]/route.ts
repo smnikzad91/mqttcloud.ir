@@ -11,13 +11,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const body = await req.json();
-  const { role, phone } = body;
+  const { role, phone, plan, planMaxUsers, planClientsPerUser } = body;
+
+  if (plan !== undefined && !["free", "basic", "starter", "enterprise"].includes(plan)) {
+    return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+  }
 
   await connectDB();
 
   const update: Record<string, unknown> = {};
   if (role !== undefined) update.role = role;
   if (phone !== undefined) update.phone = phone;
+  if (plan !== undefined) update.plan = plan;
+  if (planMaxUsers !== undefined) update.planMaxUsers = planMaxUsers === null ? null : Number(planMaxUsers);
+  if (planClientsPerUser !== undefined) update.planClientsPerUser = planClientsPerUser === null ? null : Number(planClientsPerUser);
 
   const user = await User.findByIdAndUpdate(id, { $set: update }, { returnDocument: "after" }).lean();
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });

@@ -1,17 +1,68 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useT } from "@/i18n/useT";
+
+type PlanKey = "free" | "basic" | "starter" | "enterprise";
+
+interface PlanData {
+  plan: PlanKey;
+  limits: { maxUsers: number; clientsPerUser: number };
+  usage: {
+    mqttUsers: number;
+    clients: { mqttUserId: string; username: string; count: number }[];
+  };
+}
+
+const PLAN_ORDER: PlanKey[] = ["free", "basic", "starter", "enterprise"];
+
+const PLAN_DISPLAY: Record<PlanKey, { name: string; maxUsers: string; clientsPerUser: string; selfService: boolean }> = {
+  free:       { name: "پلن رایگان",  maxUsers: "۱", clientsPerUser: "۲ (در مجموع)", selfService: true },
+  basic:      { name: "پلن پایه",    maxUsers: "۳", clientsPerUser: "۳ به‌ازای هر اکانت (حداکثر ۹ کل)", selfService: true },
+  starter:    { name: "پلن استارتر", maxUsers: "۵", clientsPerUser: "۵ به‌ازای هر اکانت (حداکثر ۲۵ کل)", selfService: true },
+  enterprise: { name: "پلن پیشرفته", maxUsers: "سفارشی", clientsPerUser: "سفارشی", selfService: false },
+};
 
 export default function SubscriptionPage() {
   const t = useT();
+  const [data, setData] = useState<PlanData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState<PlanKey | null>(null);
 
-  const features = [
-    t("feature1"),
-    t("feature2"),
-    t("feature3"),
-    t("feature4"),
-  ];
+  const fetchPlan = () => {
+    setLoading(true);
+    fetch("/api/user/plan")
+      .then((r) => r.json())
+      .then((d) => setData(d))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { queueMicrotask(fetchPlan); }, []);
+
+  const handleSwitch = async (plan: PlanKey) => {
+    setSwitching(plan);
+    try {
+      const res = await fetch("/api/user/plan", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error ?? "خطا در تغییر پلن");
+        return;
+      }
+      toast.success("پلن شما با موفقیت تغییر کرد.");
+      fetchPlan();
+    } finally {
+      setSwitching(null);
+    }
+  };
+
+  const currentPlan = data?.plan ?? "free";
+  const totalClients = data?.usage.clients.reduce((sum, c) => sum + c.count, 0) ?? 0;
 
   return (
     <div className="space-y-8">
@@ -24,7 +75,7 @@ export default function SubscriptionPage() {
         </p>
       </div>
 
-      {/* Current plan */}
+      {/* Current plan + usage */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -33,49 +84,88 @@ export default function SubscriptionPage() {
             </h2>
             <div className="mt-3 flex items-center gap-2">
               <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                {t("planFree")}
+                {loading ? "…" : PLAN_DISPLAY[currentPlan].name}
               </span>
               <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                 {t("planActive")}
               </span>
             </div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {t("planPrice")}
-            </p>
           </div>
-          <Link
-            href="/pricing"
-            className="inline-block rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors"
-          >
-            {t("upgradePlan")}
-          </Link>
         </div>
 
         <hr className="my-6 border-gray-100 dark:border-gray-800" />
 
-        <h3 className="mb-3 text-sm font-semibold text-gray-700 dark:text-gray-300">
-          {t("includedInPlan")}
-        </h3>
-        <ul className="space-y-2">
-          {features.map((f) => (
-            <li key={f} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <svg className="h-4 w-4 shrink-0 text-brand-500" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              {f}
-            </li>
-          ))}
-        </ul>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+            <p className="text-xs text-gray-500 dark:text-gray-400">اکانت‌های MQTT استفاده‌شده</p>
+            <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white" dir="ltr">
+              {loading ? "…" : `${data?.usage.mqttUsers ?? 0} / ${PLAN_DISPLAY[currentPlan].maxUsers}`}
+            </p>
+          </div>
+          <div className="rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+            <p className="text-xs text-gray-500 dark:text-gray-400">کلاینت‌های متصل (مجموع)</p>
+            <p className="mt-1 text-lg font-bold text-gray-900 dark:text-white" dir="ltr">
+              {loading ? "…" : totalClients}
+            </p>
+          </div>
+        </div>
+
+        {!loading && data && data.usage.clients.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {data.usage.clients.map((c) => (
+              <div key={c.mqttUserId} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-sm dark:bg-gray-800">
+                <span className="font-mono text-gray-700 dark:text-gray-300">{c.username}</span>
+                <span className="text-gray-500 dark:text-gray-400" dir="ltr">
+                  {c.count} / {PLAN_DISPLAY[currentPlan].clientsPerUser.split(" ")[0]}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Billing history placeholder */}
+      {/* Plan picker */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
-        <h2 className="mb-4 text-base font-semibold text-gray-800 dark:text-white">
-          {t("billingHistory")}
-        </h2>
-        <p className="text-sm text-gray-400 dark:text-gray-500">
-          {t("noInvoices")}
-        </p>
+        <h2 className="mb-4 text-base font-semibold text-gray-800 dark:text-white">تعرفه‌ها</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {PLAN_ORDER.map((plan) => {
+            const isCurrent = plan === currentPlan;
+            const display = PLAN_DISPLAY[plan];
+            return (
+              <div
+                key={plan}
+                className={`rounded-xl border p-4 ${
+                  isCurrent ? "border-brand-500 ring-1 ring-brand-500/30" : "border-gray-200 dark:border-gray-700"
+                }`}
+              >
+                <p className="font-semibold text-gray-900 dark:text-white">{display.name}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {display.maxUsers} اکانت · {display.clientsPerUser}
+                </p>
+                {isCurrent ? (
+                  <span className="mt-3 inline-block rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                    پلن فعلی شما
+                  </span>
+                ) : display.selfService ? (
+                  <button
+                    onClick={() => handleSwitch(plan)}
+                    disabled={switching !== null}
+                    className="mt-3 w-full rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+                  >
+                    {switching === plan ? "در حال تغییر…" : PLAN_ORDER.indexOf(plan) > PLAN_ORDER.indexOf(currentPlan) ? "ارتقا" : "تغییر به این پلن"}
+                  </button>
+                ) : (
+                  <Link
+                    href="/contact"
+                    className="mt-3 inline-block w-full rounded-lg border border-gray-200 px-3 py-1.5 text-center text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    تماس با فروش
+                  </Link>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

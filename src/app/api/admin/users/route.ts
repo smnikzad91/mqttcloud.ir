@@ -22,6 +22,9 @@ export async function GET() {
       walletBalance: u.walletBalance,
       avatar:        u.avatar,
       phone:         u.phone,
+      plan:               u.plan ?? "free",
+      planMaxUsers:       u.planMaxUsers ?? null,
+      planClientsPerUser: u.planClientsPerUser ?? null,
       createdAt:     u.createdAt,
     }))
   );

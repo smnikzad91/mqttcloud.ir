@@ -1,0 +1,64 @@
+// Subscription tiers. `maxUsers` caps how many MqttUser credential sets
+// ("sub-users") an account may create; `clientsPerUser` caps how many
+// MqttClient devices may be registered under each of those credential sets.
+// Enterprise has no built-in numbers — it's sales-negotiated and only takes
+// effect once an admin sets User.planMaxUsers/planClientsPerUser.
+export type PlanKey = "free" | "basic" | "starter" | "enterprise";
+
+export interface PlanDef {
+  key: PlanKey;
+  nameFa: string;
+  maxUsers: number | null;      // null = custom/unset, resolved via admin override
+  clientsPerUser: number | null;
+  selfService: boolean;         // can a user switch to this plan themselves?
+}
+
+export const PLAN_DEFS: Record<PlanKey, PlanDef> = {
+  free: {
+    key: "free",
+    nameFa: "پلن رایگان",
+    maxUsers: 1,
+    clientsPerUser: 2,
+    selfService: true,
+  },
+  basic: {
+    key: "basic",
+    nameFa: "پلن پایه",
+    maxUsers: 3,
+    clientsPerUser: 3,
+    selfService: true,
+  },
+  starter: {
+    key: "starter",
+    nameFa: "پلن استارتر",
+    maxUsers: 5,
+    clientsPerUser: 5,
+    selfService: true,
+  },
+  enterprise: {
+    key: "enterprise",
+    nameFa: "پلن پیشرفته",
+    maxUsers: null,
+    clientsPerUser: null,
+    selfService: false,
+  },
+};
+
+export const SELF_SERVICE_PLANS: PlanKey[] = (Object.keys(PLAN_DEFS) as PlanKey[]).filter(
+  (k) => PLAN_DEFS[k].selfService
+);
+
+export interface ResolvedLimits {
+  maxUsers: number;
+  clientsPerUser: number;
+}
+
+// A user with no numeric limit resolved (e.g. enterprise before an admin
+// configures it) gets 0 — fail closed, never silently unlimited.
+export function resolvePlanLimits(user: { plan?: string; planMaxUsers?: number | null; planClientsPerUser?: number | null }): ResolvedLimits {
+  const def = PLAN_DEFS[(user.plan as PlanKey) ?? "free"] ?? PLAN_DEFS.free;
+  return {
+    maxUsers: user.planMaxUsers ?? def.maxUsers ?? 0,
+    clientsPerUser: user.planClientsPerUser ?? def.clientsPerUser ?? 0,
+  };
+}
