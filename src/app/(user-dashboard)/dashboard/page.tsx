@@ -36,6 +36,32 @@ export default function UserDashboardPage() {
     });
   }, []);
 
+  type PlanKey = "free" | "basic" | "starter" | "enterprise";
+  const planLabel = (plan: PlanKey) => {
+    switch (plan) {
+      case "free": return t("planLabelFree");
+      case "basic": return t("planLabelBasic");
+      case "starter": return t("planLabelStarter");
+      case "enterprise": return t("planLabelEnterprise");
+    }
+  };
+  const [planInfo, setPlanInfo] = useState<{
+    plan: PlanKey;
+    limits: { maxUsers: number; clientsPerUser: number };
+    usage: { mqttUsers: number; clients: { count: number }[] };
+  } | null>(null);
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetch("/api/user/plan")
+        .then((r) => r.json())
+        .then((d) => setPlanInfo(d))
+        .catch(() => {});
+    });
+  }, []);
+  const totalClients = planInfo?.usage.clients.reduce((sum, c) => sum + c.count, 0) ?? 0;
+  const canSelfUpgrade = planInfo?.plan === "free" || planInfo?.plan === "basic";
+  const fmt = (n: number) => n.toLocaleString(lang === "fa" ? "fa-IR" : "en-US");
+
   const quickLinks = [
     { href: "/dashboard/profile",      title: t("editProfile"),        desc: t("editProfileDesc") },
     { href: "/dashboard/account",      title: t("accountSettings"),    desc: t("accountSettingsDesc") },
@@ -96,17 +122,19 @@ export default function UserDashboardPage() {
               {t("currentPlan")}
             </span>
             <h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">
-              {t("planFree")}
+              {planInfo ? planLabel(planInfo.plan) : "…"}
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {t("planFreeDesc")}
+              {planInfo
+                ? `${fmt(planInfo.usage.mqttUsers)}/${fmt(planInfo.limits.maxUsers)} ${lang === "fa" ? "اکانت" : "accounts"} · ${fmt(totalClients)}/${fmt(planInfo.limits.maxUsers * planInfo.limits.clientsPerUser)} ${lang === "fa" ? "کلاینت" : "clients"}`
+                : "…"}
             </p>
           </div>
           <Link
-            href="/pricing"
+            href="/dashboard/subscription"
             className="inline-block rounded-lg bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600 transition-colors shadow-md shadow-brand-500/25"
           >
-            {t("upgradeToPro")}
+            {canSelfUpgrade ? t("upgradePlan") : t("manageSubscription")}
           </Link>
         </div>
       </div>
