@@ -41,10 +41,12 @@ Page-level route protection (redirect anonymous users to `/signin`, non-admins a
 
 | Model | Key fields |
 |---|---|
-| `User` | `firstName`, `lastName`, `email`, `password` (bcrypt), `role` (`admin`/`user`), `walletBalance`, `avatar`, `phone` |
+| `User` | `firstName`, `lastName`, `email`, `password` (bcrypt), `role` (`admin`/`user`), `walletBalance`, `avatar`, `phone`, `plan` (`free`/`basic`/`starter`/`enterprise`), `planMaxUsers`/`planClientsPerUser` (admin overrides, see Subscription Plans below) |
 | `Card` | User's Iranian bank card — `cardNumber`, `ownerName`, `bankName`, `userId` |
 | `AdminCard` | Admin-owned bank card shown to users for deposits |
 | `Deposit` | `userId`, `cardId`, `amount`, `receiptImage`, `status` (`pending`/`approved`/`rejected`), `adminNote`, `interceptionCode` |
+| `MqttUser` | An MQTT broker credential set ("sub-user") owned by a `User` — `userId`, `username`, `password` (bcrypt), `isActive`, `maxConnection` (plan-derived, see Subscription Plans below) |
+| `MqttClient` | A device identity registered under an `MqttUser` — `userId`, `mqttUserId`, `clientName`, `isOnline`, `lastSeenAt` |
 | `BlogPost` | `slug`, `category`, `title`, `excerpt`, `sections[]` (`heading?`, `body`, `image?`), `hashtags[]`, `readTime`, `highlight`, `published` |
 | `NewsItem` | `category`, `hashtags[]`, `title`, `body`, `image?`, `highlight`, `published`, `publishedAt` |
 | `Announcement` | Site-wide announcements shown to users |
@@ -58,6 +60,27 @@ Users deposit wallet credit by:
 1. Picking an `AdminCard` to transfer to
 2. Uploading a bank receipt image
 3. Admin approves/rejects via `/admin/(others-pages)/finance/` — on approval, `walletBalance` is incremented server-side
+
+## Subscription Plans & Quotas
+
+Every `User` is on a plan that caps how many `MqttUser` credential sets ("sub-users") they can create and how many `MqttClient` devices each credential set can register. Defined in `src/lib/plans.ts`:
+
+| Plan | maxUsers | clientsPerUser | Self-service? |
+|---|---|---|---|
+| `free` | 1 | 2 (total) | Yes |
+| `basic` | 3 | 3 (9 total) | Yes |
+| `starter` | 5 | 5 (25 total) | Yes |
+| `enterprise` | custom | custom | No — admin sets `User.planMaxUsers`/`planClientsPerUser`; self-service switching to this plan is rejected (sales-contact only) |
+
+`resolvePlanLimits()` always resolves live from the account's *current* plan — an existing `MqttUser`'s `maxConnection` field is only a snapshot taken at creation time (used for display and as the broker's connection cap, see below), not the source of truth for registration limits.
+
+**Enforcement, at both the API and DB layers** (`src/lib/planEnforcement.ts`):
+- API: `POST /api/user/mqtt/credentials` and `POST /api/user/mqtt/clients` check the live limit before creating and return a `403` with a clear message.
+- DB: matching `pre("save")` hooks on the `MqttUser`/`MqttClient` Mongoose schemas re-check the same limit as a backstop for any other write path.
+- Self-service plan switching: `GET`/`PATCH /api/user/plan` (used by `/dashboard/subscription`) — `PATCH` rejects `enterprise` outright, and rejects a downgrade if current usage already exceeds the target plan's limits.
+- Admin can set any user's plan, and for `enterprise`, the custom `planMaxUsers`/`planClientsPerUser` numbers, via the Users list edit modal (`PUT /api/admin/users/[id]`).
+
+**The broker (`broker-service`, a separate git repo — not part of this codebase) enforces a second, independent limit**: concurrent live connections per credential set, checked in `aedes.authenticate` against `MqttUser.maxConnection` (counting `aedes.clients` for the same `mqttUserId`, excluding the connecting client's own id so reconnects aren't double-counted). This exists because deleting a registered `MqttClient` from the dashboard never disconnects its live broker session — without this check, a user could free up a registration slot, register a replacement, and end up with more concurrent connections than the plan allows even though the registration count stayed within quota. `broker-service` has its own copy of the `MqttUser`/`MqttClient` Mongoose schemas (`broker-service/src/models.js`, pointed at the same MongoDB collections) — it reads `maxConnection` as a plain stored number and does not re-resolve the live plan itself, so the two codebases must stay in sync on what that field means.
 
 ## Static Content
 
