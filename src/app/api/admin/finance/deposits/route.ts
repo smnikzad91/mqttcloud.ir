@@ -40,16 +40,17 @@ export async function GET() {
           name:  `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim(),
           email: u.email ?? "",
         } : null,
-        card: c ? {
-          cardNumber: c.cardNumber ?? "",
-          bankName:   c.bankName   ?? "",
-        } : null,
+        // Legacy manual deposits populate a real Card; nodepass-routed ones
+        // never set cardId, so fall back to the receiving-card snapshot
+        // nodepass returned at payment-creation time — same shape either way.
+        card: c
+          ? { cardNumber: c.cardNumber ?? "", bankName: c.bankName ?? "" }
+          : d.payCardNumber
+            ? { cardNumber: d.payCardNumber, bankName: d.payCardBankName ?? "" }
+            : null,
         payment: d.nodepassPaymentId ? {
-          trackingCode:     d.trackingCode ?? "",
-          payableRial:      d.payableRial ?? "",
-          payCardNumber:    d.payCardNumber ?? "",
-          payCardOwnerName: d.payCardOwnerName ?? "",
-          payCardBankName:  d.payCardBankName ?? "",
+          trackingCode: d.trackingCode ?? "",
+          payableRial:  d.payableRial ?? "",
         } : null,
       };
     })
