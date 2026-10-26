@@ -5,7 +5,6 @@ import crypto from "crypto";
 // message to that key's balance. `clientSmsId` is our own idempotency key.
 const BASE = "https://notifycloud.ir/api/v1";
 const SITE = (process.env.NEXTAUTH_URL ?? "https://mqttcloud.ir").replace(/\/$/, "");
-const DOMAIN = new URL(SITE).hostname;
 
 export interface SendSmsResult {
   status: boolean;
@@ -39,11 +38,8 @@ export async function sendSms(to: string, text: string, clientSmsId: string): Pr
   }
 }
 
-// Android's SMS Retriever API and iOS's Security Code AutoFill both look for
-// a line of the form "@<domain> #<code>" to auto-detect and offer one-tap
-// fill of a verification code — this must be the OTP's own literal text.
 export function sendOtpSms(phone: string, code: string, clientSmsId: string) {
-  const text = `کد تایید شما: ${code}\nاین کد را به کسی ندهید.\n@${DOMAIN} #${code}`;
+  const text = `کد تایید شما: ${code}\nاین کد را به کسی ندهید.`;
   return sendSms(phone, text, clientSmsId);
 }
 
