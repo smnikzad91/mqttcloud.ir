@@ -43,7 +43,7 @@ export async function sendSms(to: string, text: string, clientSmsId: string): Pr
 // a line of the form "@<domain> #<code>" to auto-detect and offer one-tap
 // fill of a verification code — this must be the OTP's own literal text.
 export function sendOtpSms(phone: string, code: string, clientSmsId: string) {
-  const text = `کد تایید شما در mqttcloud.ir: ${code}\nاین کد را به کسی ندهید.\n@${DOMAIN} #${code}`;
+  const text = `کد تایید شما: ${code}\nاین کد را به کسی ندهید.\n@${DOMAIN} #${code}`;
   return sendSms(phone, text, clientSmsId);
 }
 
