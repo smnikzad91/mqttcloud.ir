@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useWebOtp } from "@/hooks/useWebOtp";
 
 function PasswordStrength({ password }: { password: string }) {
   const score =
@@ -62,6 +63,10 @@ export default function SignUpForm() {
     const id = setInterval(() => setCooldown((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(id);
   }, [cooldown]);
+
+  // Chrome/Android reads the code straight out of the SMS and drops it in —
+  // see src/hooks/useWebOtp.ts.
+  useWebOtp(step === "otp", (otp) => setCode(otp.replace(/\D/g, "").slice(0, 6)));
 
   const handleSubmitDetails = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,6 +309,7 @@ export default function SignUpForm() {
                     ref={codeRef}
                     type="text"
                     inputMode="numeric"
+                    autoComplete="one-time-code"
                     dir="ltr"
                     placeholder="------"
                     required

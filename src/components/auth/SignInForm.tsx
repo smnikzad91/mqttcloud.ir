@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
+import { useWebOtp } from "@/hooks/useWebOtp";
 
 const IRANIAN_MOBILE = /^09[0-9]{9}$/;
 const RESEND_COOLDOWN_SEC = 60;
@@ -133,6 +134,10 @@ function PhoneLoginTab() {
     return () => clearInterval(id);
   }, [cooldown]);
 
+  // Chrome/Android reads the code straight out of the SMS and drops it in —
+  // see src/hooks/useWebOtp.ts.
+  useWebOtp(step === "otp", (otp) => setCode(otp.replace(/\D/g, "").slice(0, 6)));
+
   const requestCode = async () => {
     setError("");
     if (!IRANIAN_MOBILE.test(phone)) {
@@ -239,6 +244,7 @@ function PhoneLoginTab() {
             ref={codeRef}
             type="text"
             inputMode="numeric"
+            autoComplete="one-time-code"
             dir="ltr"
             placeholder="------"
             required
