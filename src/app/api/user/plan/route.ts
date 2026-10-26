@@ -6,6 +6,7 @@ import MqttUser from "@/models/MqttUser";
 import MqttClient from "@/models/MqttClient";
 import { PLAN_DEFS, SELF_SERVICE_PLANS, resolvePlanLimits, type PlanKey } from "@/lib/plans";
 import { assertUsageFitsPlan, PlanLimitError } from "@/lib/planEnforcement";
+import { sendPlanChangedSms, newClientSmsId } from "@/lib/sms";
 
 export async function GET() {
   const session = await auth();
@@ -13,7 +14,7 @@ export async function GET() {
 
   await connectDB();
 
-  const user = await User.findById(session.user.id).select("plan planMaxUsers planClientsPerUser").lean();
+  const user = await User.findById(session.user.id).select("plan planMaxUsers planClientsPerUser planExpiresAt").lean();
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const limits = resolvePlanLimits(user);
@@ -31,6 +32,7 @@ export async function GET() {
 
   return NextResponse.json({
     plan: user.plan ?? "free",
+    planExpiresAt: user.planExpiresAt ?? null,
     limits,
     usage: {
       mqttUsers: mqttUserCount,
@@ -74,9 +76,19 @@ export async function PATCH(req: NextRequest) {
     throw err;
   }
 
-  await User.findByIdAndUpdate(session.user.id, {
-    $set: { plan: targetPlan, planMaxUsers: null, planClientsPerUser: null },
-  });
+  const user = await User.findByIdAndUpdate(session.user.id, {
+    $set: {
+      plan: targetPlan,
+      planMaxUsers: null,
+      planClientsPerUser: null,
+      planExpiresAt: null,
+      planReminderSentAt: null,
+    },
+  }).select("phone").lean();
+
+  if (user?.phone) {
+    sendPlanChangedSms(user.phone, targetPlan, newClientSmsId("planchange")).catch(console.error);
+  }
 
   return NextResponse.json({ ok: true, plan: targetPlan });
 }

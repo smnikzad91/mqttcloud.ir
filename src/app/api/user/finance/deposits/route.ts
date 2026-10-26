@@ -95,6 +95,8 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("deposit checkout failed:", err);
     const message = err instanceof Error ? err.message : "پرداخت ایجاد نشد. لطفاً دوباره تلاش کنید.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    // Cloudflare replaces 502/503/504 bodies with its own generic error page
+    // on this zone, so a real 5xx here never reaches the client as JSON.
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

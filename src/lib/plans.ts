@@ -53,6 +53,12 @@ export const SELF_SERVICE_PLANS: PlanKey[] = (Object.keys(PLAN_DEFS) as PlanKey[
   (k) => PLAN_DEFS[k].selfService
 );
 
+// How long a paid self-service plan lasts before it needs renewing. Applies
+// to basic/starter only — free has no cost to expire, and enterprise is
+// admin-managed (see User.planExpiresAt / src/lib/planExpiry.ts).
+export const PLAN_SUBSCRIPTION_DAYS = 30;
+export const PLAN_REMINDER_DAYS_BEFORE = 3;
+
 // Self-service plans that actually cost something — these must go through
 // nodepass checkout rather than the instant free PATCH /api/user/plan.
 export const PAID_SELF_SERVICE_PLANS: PlanKey[] = SELF_SERVICE_PLANS.filter(

@@ -8,6 +8,7 @@ import { PLAN_DEFS, type PlanKey } from "@/lib/plans";
 
 interface PlanData {
   plan: PlanKey;
+  planExpiresAt: string | null;
   limits: { maxUsers: number; clientsPerUser: number };
   usage: {
     mqttUsers: number;
@@ -110,6 +111,14 @@ export default function SubscriptionPage() {
                 {t("planActive")}
               </span>
             </div>
+            {!loading && data?.planExpiresAt && (
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                تاریخ تمدید:{" "}
+                <span dir="ltr" className="font-medium text-gray-700 dark:text-gray-300">
+                  {new Date(data.planExpiresAt).toLocaleDateString("fa-IR", { year: "numeric", month: "long", day: "numeric" })}
+                </span>
+              </p>
+            )}
           </div>
         </div>
 

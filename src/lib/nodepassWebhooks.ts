@@ -5,7 +5,9 @@ import User from "@/models/User";
 import MqttUser from "@/models/MqttUser";
 import MqttClient from "@/models/MqttClient";
 import { sendDepositStatusEmail } from "@/lib/mailer";
+import { sendPlanChangedSms, newClientSmsId } from "@/lib/sms";
 import { assertUsageFitsPlan, PlanLimitError } from "@/lib/planEnforcement";
+import { PLAN_SUBSCRIPTION_DAYS } from "@/lib/plans";
 
 // nodepass can redeliver the same event, and (per its own docs) a payment
 // can go PENDING -> EXPIRED -> PAID if the bank SMS lands just after expiry.
@@ -62,9 +64,20 @@ export async function handlePlanPurchaseWebhook(purchase: InstanceType<typeof Pl
       return;
     }
 
-    await User.findByIdAndUpdate(purchase.userId, {
-      $set: { plan: purchase.targetPlan, planMaxUsers: null, planClientsPerUser: null },
-    });
+    const expiresAt = new Date(Date.now() + PLAN_SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000);
+    const user = await User.findByIdAndUpdate(purchase.userId, {
+      $set: {
+        plan: purchase.targetPlan,
+        planMaxUsers: null,
+        planClientsPerUser: null,
+        planExpiresAt: expiresAt,
+        planReminderSentAt: null,
+      },
+    }).select("phone").lean();
+
+    if (user?.phone) {
+      sendPlanChangedSms(user.phone, purchase.targetPlan, newClientSmsId("planchange")).catch(console.error);
+    }
   } else if (event === "payment.expired" || event === "payment.cancelled") {
     await PlanPurchase.findOneAndUpdate(
       { _id: purchase._id, status: "pending" },

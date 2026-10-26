@@ -12,6 +12,9 @@ export interface IUser extends Document {
   plan: "free" | "basic" | "starter" | "enterprise";
   planMaxUsers?: number | null;
   planClientsPerUser?: number | null;
+  planExpiresAt?: Date | null;
+  planReminderSentAt?: Date | null;
+  phoneVerified: boolean;
   resetPasswordTokenHash?: string;
   resetPasswordExpires?: Date;
   createdAt: Date;
@@ -32,6 +35,15 @@ const UserSchema = new Schema<IUser>(
     // the sales-negotiated "enterprise" tier, which has no numbers of its own.
     planMaxUsers:       { type: Number, default: null },
     planClientsPerUser: { type: Number, default: null },
+    // Only set for self-service paid plans (basic/starter) — a 30-day
+    // subscription window. null for free/enterprise, which never expire
+    // through this mechanism. See src/lib/planExpiry.ts.
+    planExpiresAt:      { type: Date, default: null },
+    planReminderSentAt: { type: Date, default: null },
+    // Gates dashboard access for new signups — true unconditionally for
+    // accounts created before this field existed (see the one-time
+    // migration), since they were already using the product.
+    phoneVerified: { type: Boolean, default: true },
     resetPasswordTokenHash: { type: String, select: false },
     resetPasswordExpires:   { type: Date,   select: false },
   },
