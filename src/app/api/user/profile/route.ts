@@ -12,7 +12,7 @@ export async function GET() {
   }
 
   await connectDB();
-  const user = await User.findById(session.user.id).select("firstName lastName email phone walletBalance");
+  const user = await User.findById(session.user.id).select("firstName lastName email phone walletBalance phoneVerified");
   if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   return NextResponse.json({
@@ -21,6 +21,7 @@ export async function GET() {
     email:         user.email,
     phone:         user.phone ?? "",
     walletBalance: user.walletBalance ?? 0,
+    phoneVerified: user.phoneVerified,
   });
 }
 

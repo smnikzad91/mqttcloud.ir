@@ -3,6 +3,7 @@
 import UserSidebar from "@/components/user-dashboard/UserSidebar";
 import UserHeader from "@/components/user-dashboard/UserHeader";
 import MqttToastBridge from "@/components/user-dashboard/MqttToastBridge";
+import PhoneVerifyBanner from "@/components/user-dashboard/PhoneVerifyBanner";
 import { UserSidebarProvider, useUserSidebar } from "@/context/UserSidebarContext";
 import { WalletProvider } from "@/context/WalletContext";
 import { MqttLiveProvider } from "@/context/MqttLiveContext";
@@ -26,6 +27,7 @@ function UserDashboardShell({ children }: { children: React.ReactNode }) {
       <UserSidebar />
       <div className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}>
         <UserHeader />
+        <PhoneVerifyBanner />
         <main className="flex-1 overflow-y-auto">
           <div className="mx-auto max-w-screen-2xl px-6 py-8">{children}</div>
         </main>
