@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { createContext, createElement, useContext, useSyncExternalStore, type ReactNode } from "react";
 import type { Transition, Variants } from "framer-motion";
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
@@ -26,7 +26,22 @@ function getReducedMotionServerSnapshot() {
  * the real value right after — avoiding a hydration mismatch.
  */
 export function useReducedMotionSafe(): boolean {
-  return useSyncExternalStore(subscribeToReducedMotion, getReducedMotionSnapshot, getReducedMotionServerSnapshot);
+  const forced = useContext(ForceMotionContext);
+  const prefersReduced = useSyncExternalStore(subscribeToReducedMotion, getReducedMotionSnapshot, getReducedMotionServerSnapshot);
+  return prefersReduced && !forced;
+}
+
+const ForceMotionContext = createContext(false);
+
+/**
+ * Makes everything inside animate even when the viewer prefers reduced
+ * motion — a product decision for the homepage's marketing sections. Covers
+ * JS motion (every hook above) and, via the `motion-always` class, the CSS
+ * animations that the global reduced-motion rule in globals.css would
+ * otherwise freeze.
+ */
+export function ForceMotion({ children }: { children: ReactNode }) {
+  return createElement(ForceMotionContext.Provider, { value: true }, createElement("div", { className: "motion-always" }, children));
 }
 
 export const easeSignal: Transition["ease"] = [0.16, 1, 0.3, 1];

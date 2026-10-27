@@ -1,75 +1,48 @@
-import { BarChart3, Lock, Plug, Settings2, ShieldCheck, Zap } from "lucide-react";
-import { Stagger, StaggerItem } from "@/components/public/shared/Stagger";
-import { SectionHeading } from "@/components/public/shared/SectionHeading";
-import { Container } from "@/components/public/shared/Container";
+import { Layers } from "lucide-react";
+import { Reveal } from "@/components/public/shared/Reveal";
+import { MessagingCard } from "./features/MessagingCard";
+import { TlsCard } from "./features/TlsCard";
+import { NamespaceCard } from "./features/NamespaceCard";
+import { ProvisioningCard } from "./features/ProvisioningCard";
+import { ActivityCard } from "./features/ActivityCard";
+import { DeveloperCard } from "./features/DeveloperCard";
 
-const features = [
-  {
-    title: "پیام‌رسانی بی‌درنگ",
-    desc: "بروکر Aedes با تأخیر بسیار پایین، پیام‌های شما را در کسری از ثانیه بین دستگاه‌ها منتشر می‌کند.",
-    icon: Zap,
-  },
-  {
-    title: "اتصال امن با TLS",
-    desc: "هر اتصال با گواهی TLS رمزنگاری می‌شود و احراز هویت هر دستگاه با اکانت اختصاصی خودش انجام می‌گیرد.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "namespace امن برای تاپیک‌ها",
-    desc: "هر اکانت فقط به تاپیک‌های زیرمجموعهٔ نام‌کاربری خودش دسترسی دارد؛ داده کاربران کاملاً از هم جداست.",
-    icon: Lock,
-  },
-  {
-    title: "مدیریت بدون کدنویسی",
-    desc: "اکانت و دستگاه جدید را از داشبورد در چند کلیک بسازید؛ بدون نیاز به تنظیم دستی سرور.",
-    icon: Settings2,
-  },
-  {
-    title: "فعالیت اتصال لحظه‌ای",
-    desc: "وضعیت آنلاین یا آفلاین هر دستگاه و تاریخچه اتصال آن را به‌صورت زنده در داشبورد دنبال کنید.",
-    icon: BarChart3,
-  },
-  {
-    title: "آماده برای توسعه‌دهندگان",
-    desc: "با هر کتابخانه استاندارد MQTT (mqtt.js، paho، mosquitto) مستقیم به بروکر mqttcloud.ir وصل شوید.",
-    icon: Plug,
-  },
-];
-
+/**
+ * Bento grid — 1 column on phones, 2 on tablets (big cards span both), and
+ * the asymmetric 7/5 · 4/4/4 · 12 layout from lg up. Each card owns its own
+ * simulator state, so one card's ticking timer never re-renders the others.
+ */
 export default function Features() {
   return (
-    <section id="features" className="relative bg-gray-50 dark:bg-gray-900/50">
-      <Container className="py-24">
-        <SectionHeading
-          eyebrow="امکانات"
-          title="همه چیزی که برای پیام‌رسانی IoT نیاز دارید"
-          description="mqttcloud.ir را یک‌بار راه‌اندازی کنید و با خیال راحت روی محصول خودتان تمرکز کنید."
-        />
+    <section id="features" className="relative scroll-mt-24 overflow-hidden py-16 sm:py-28">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 right-1/3 h-96 w-96 rounded-full bg-brand-500/10 blur-[140px] dark:bg-brand-500/15" />
+        <div className="absolute bottom-1/4 left-1/4 h-96 w-96 rounded-full bg-theme-cyan-500/5 blur-[140px] dark:bg-theme-cyan-500/15" />
+      </div>
 
-        <Stagger className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" stagger={0.07}>
-          {features.map((f) => (
-            <StaggerItem
-              key={f.title}
-              className="group relative rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm transition-all duration-300 hover:-translate-y-1 hover:border-brand-200 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500/30"
-            >
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute -inset-px -z-10 rounded-2xl bg-gradient-to-br from-brand-500/25 via-theme-purple-500/10 to-transparent opacity-0 blur-xl transition-opacity duration-500 group-hover:opacity-100"
-              />
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-theme-purple-500 text-white shadow-lg shadow-brand-500/25 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
-                <f.icon className="h-6 w-6" aria-hidden="true" />
-              </div>
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal className="mx-auto mb-10 max-w-2xl text-center sm:mb-16">
+          <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1.5 text-xs font-extrabold text-brand-600 dark:text-theme-cyan-500">
+            <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+            امکانات
+          </span>
+          <h2 className="text-3xl leading-tight font-black tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-5xl" style={{ textWrap: "balance" }}>
+            همه چیزی که برای پیام‌رسانی IoT نیاز دارید
+          </h2>
+          <p className="mt-4 text-base text-gray-600 dark:text-gray-300 sm:text-lg">
+            mqttcloud.ir را یک‌بار راه‌اندازی کنید و با خیال راحت روی محصول خودتان تمرکز کنید. کارت‌های زیر شبیه‌سازی تعاملی‌اند؛ دکمه‌هایشان را امتحان کنید.
+          </p>
+        </Reveal>
 
-              <h3 className="mt-5 text-base font-bold text-gray-900 dark:text-white">
-                {f.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
-                {f.desc}
-              </p>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </Container>
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-12">
+          <Reveal delay={0.05} className="min-w-0 md:col-span-2 lg:col-span-7"><MessagingCard /></Reveal>
+          <Reveal delay={0.1} className="min-w-0 md:col-span-2 lg:col-span-5"><TlsCard /></Reveal>
+          <Reveal delay={0.14} className="min-w-0 lg:col-span-4"><NamespaceCard /></Reveal>
+          <Reveal delay={0.18} className="min-w-0 lg:col-span-4"><ProvisioningCard /></Reveal>
+          <Reveal delay={0.22} className="min-w-0 md:col-span-2 lg:col-span-4"><ActivityCard /></Reveal>
+          <Reveal delay={0.26} className="min-w-0 md:col-span-2 lg:col-span-12"><DeveloperCard /></Reveal>
+        </div>
+      </div>
     </section>
   );
 }

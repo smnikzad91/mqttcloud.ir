@@ -4,10 +4,8 @@ import { JsonLd } from "@/components/common/JsonLd";
 import { connectDB } from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 import NewsItem from "@/models/NewsItem";
-import SocialLink from "@/models/SocialLink";
 import Faq from "@/models/Faq";
 import SiteSeo from "@/models/SiteSeo";
-import type { SocialPlatform } from "@/models/SocialLink";
 
 export const dynamic = "force-dynamic";
 
@@ -49,10 +47,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   await connectDB();
 
-  const [rawBlog, rawNews, rawSocial, rawFaqs] = await Promise.all([
+  const [rawBlog, rawNews, rawFaqs] = await Promise.all([
     BlogPost.findOne({ highlight: true, published: true }).select("slug category title excerpt coverImage readTime").lean(),
-    NewsItem.findOne({ highlight: true, published: true }).select("_id tag title body image publishedAt").lean(),
-    SocialLink.find({ active: true }).sort({ order: 1, createdAt: 1 }).select("platform url label").lean(),
+    NewsItem.findOne({ highlight: true, published: true }).select("_id category title body image publishedAt").lean(),
     Faq.find({ active: true }).sort({ order: 1, createdAt: -1 }).select("question answer").lean(),
   ]);
 
@@ -78,12 +75,7 @@ export default async function HomePage() {
       }
     : null;
 
-  const socialLinks = rawSocial.map((l) => ({
-    id: String(l._id),
-    platform: l.platform as SocialPlatform,
-    url: l.url,
-    label: l.label,
-  }));
+  const faqs = rawFaqs.map((f) => ({ _id: String(f._id), question: f.question, answer: f.answer }));
 
   const faqJsonLd = rawFaqs.length > 0
     ? {
@@ -100,7 +92,7 @@ export default async function HomePage() {
   return (
     <>
       {faqJsonLd && <JsonLd data={faqJsonLd} />}
-      <HomePageClient featuredBlog={featuredBlog} featuredNews={featuredNews} socialLinks={socialLinks} />
+      <HomePageClient featuredBlog={featuredBlog} featuredNews={featuredNews} faqs={faqs} />
     </>
   );
 }
