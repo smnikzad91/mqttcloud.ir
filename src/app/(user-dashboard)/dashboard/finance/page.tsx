@@ -142,7 +142,7 @@ export default function FinancePage() {
     { colId: "tracking", headerName: t("finTracking"), width: 170, sortable: false, cellRenderer: TrackingCell },
     ...(hasCards ? [{ field: "card" as const, headerName: t("finCard"), width: 170, sortable: false, cellRenderer: CardCell, valueFormatter: () => "" }] : []),
     { colId: "note", headerName: t("finNote"), flex: 1, minWidth: 140, sortable: false, cellRenderer: NoteCell, tooltipField: "adminNote" },
-    { colId: "actions", headerName: "", width: 200, sortable: false, cellRenderer: ActionsCell },
+    { colId: "actions", headerName: "", width: 200, pinned: "right", sortable: false, cellRenderer: ActionsCell },
   ], [t, hasCards]);
 
   const context = useMemo<Ctx>(() => ({

@@ -218,7 +218,7 @@ export default function AdminUsersList() {
     { field: "phone", headerName: t("colPhone"), width: 140, sortable: false, cellRenderer: PhoneCell },
     { field: "walletBalance", headerName: t("colWallet"), width: 150, cellRenderer: WalletCell },
     { field: "createdAt", headerName: t("colJoined"), width: 130, sort: "desc", cellRenderer: DateCell },
-    { colId: "actions", headerName: "", width: 130, sortable: false, cellRenderer: ActionsCell },
+    { colId: "actions", headerName: "", width: 130, pinned: "right", sortable: false, cellRenderer: ActionsCell },
   ], [t]);
   const context = useMemo<Ctx>(() => ({ isRTL, t, fmt, planLabels, onEdit: openEdit, onDelete: askDelete, onOpen: openDetail }), [isRTL, t, fmt, planLabels, openEdit, askDelete, openDetail]);
 

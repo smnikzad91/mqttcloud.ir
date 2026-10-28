@@ -2,7 +2,9 @@
 
 // One AG Grid setup for every table in both dashboards: shared light/dark
 // theme, native RTL (enableRtl — no more reversing column arrays), auto
-// height, and pagination that only appears once a list is long.
+// height, and pagination that only appears once a list is long. Callers pin
+// action columns with pinned: "right", meaning "the end edge": AG Grid does
+// not mirror pinning under enableRtl, so it's flipped to "left" in Persian.
 
 import React, { useMemo } from "react";
 import { AgGridReact, type AgGridReactProps } from "ag-grid-react";
@@ -33,9 +35,10 @@ export const gridLight = themeQuartz.withParams({
 
 export const gridDark = themeQuartz.withParams({
   ...base,
-  backgroundColor: "#0c111d", foregroundColor: "#f2f4f7", borderColor: "#1d2939",
-  chromeBackgroundColor: "#0c111d", headerTextColor: "#98a2b3", rowHoverColor: "rgba(255,255,255,0.025)",
-  rowBorder: { color: "#1d2939" },
+  // Matches the dashboard's dark graphite scale (globals.css → .dark .dash-surface).
+  backgroundColor: "#1b1b1f", foregroundColor: "#f4f4f5", borderColor: "#2f2f35",
+  chromeBackgroundColor: "#1b1b1f", headerTextColor: "#a1a1aa", rowHoverColor: "rgba(255,255,255,0.03)",
+  rowBorder: { color: "#2f2f35" },
 });
 
 type Props<T> = Omit<AgGridReactProps<T>, "theme" | "rowData" | "columnDefs"> & {
@@ -51,16 +54,21 @@ export default function DataGrid<T>({ rows, columns, idField = "id" as keyof T &
   const { theme } = useTheme();
   const { lang } = useLanguage();
   const paginate = rows.length > pageSize;
+  const isRTL = lang === "fa";
+  const cols = useMemo(
+    () => (isRTL ? columns.map((c) => (c.pinned === "right" ? { ...c, pinned: "left" as const } : c)) : columns),
+    [columns, isRTL],
+  );
   const defaultColDef = useMemo<ColDef<T>>(() => ({ sortable: true, filter: false, resizable: false, suppressMovable: true }), []);
 
   return (
     <div className="dash-grid">
       <AgGridReact<T>
         rowData={rows}
-        columnDefs={columns}
+        columnDefs={cols}
         defaultColDef={defaultColDef}
         theme={theme === "dark" ? gridDark : gridLight}
-        enableRtl={lang === "fa"}
+        enableRtl={isRTL}
         domLayout="autoHeight"
         rowHeight={56}
         headerHeight={44}

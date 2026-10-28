@@ -897,5 +897,23 @@ span.flatpickr-weekday,
 
 /* Dashboard DataGrid: vertically center every cell (plain text and custom renderers alike). */
 .dash-grid .ag-cell { display: flex; align-items: center; }
-.dash-grid .ag-cell-wrapper, .dash-grid .ag-cell > span:first-child:only-child { width: 100%; }
 .dash-grid { border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; overflow: hidden; }
+
+/*
+ * Dashboard surfaces. In dark mode the dashboards use a neutral graphite
+ * scale instead of the site's navy-tinted grays (the public landing page
+ * keeps those). Tailwind v4 utilities read --color-gray-* at runtime, so
+ * redefining them on the dashboard wrapper re-themes every bg/border/text
+ * gray inside it, modals and drawers included.
+ */
+.dash-surface { --dash-bg: var(--color-gray-50); background-color: var(--dash-bg); }
+.dark .dash-surface {
+  --color-gray-400: #a1a1aa;
+  --color-gray-500: #8d8d96;
+  --color-gray-600: #63636b;
+  --color-gray-700: #46464d;
+  --color-gray-800: #2f2f35;
+  --color-gray-900: #202024;
+  --color-gray-950: #19191c;
+  --dash-bg: #141416;
+}

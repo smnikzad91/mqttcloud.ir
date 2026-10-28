@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const wide = sidebar.isExpanded || sidebar.isHovered;
 
   return (
-    <div dir={lang === "fa" ? "rtl" : "ltr"} className="min-h-screen bg-gray-50 dark:bg-[#070a12]">
+    <div dir={lang === "fa" ? "rtl" : "ltr"} className="dash-surface min-h-screen">
       <DashboardSidebar sections={sections} homeHref="/admin" sidebar={sidebar} />
       <div className={`flex min-w-0 flex-col transition-[margin] duration-300 ease-in-out ${wide ? "lg:ms-[280px]" : "lg:ms-[72px]"}`}>
         <DashboardHeader

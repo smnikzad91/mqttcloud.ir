@@ -151,7 +151,7 @@ export default function AdminFinancePage() {
     { field: "createdAt", headerName: t("finDate"), width: 170, sort: "desc", cellRenderer: DateTimeCell },
     { colId: "tracking", headerName: t("finTracking"), width: 170, sortable: false, cellRenderer: TrackingCell },
     { colId: "note", headerName: t("finNote"), flex: 1, minWidth: 140, sortable: false, cellRenderer: NoteCell, tooltipField: "adminNote" },
-    { colId: "actions", headerName: "", width: 200, sortable: false, cellRenderer: ActionsCell },
+    { colId: "actions", headerName: "", width: 200, pinned: "right", sortable: false, cellRenderer: ActionsCell },
   ], [t]);
   const context = useMemo<Ctx>(() => ({
     isRTL, unit: t("walletUnit"), t, neverLabel: "—", busyId,

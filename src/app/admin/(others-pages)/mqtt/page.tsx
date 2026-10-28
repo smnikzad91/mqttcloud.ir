@@ -109,7 +109,7 @@ export default function AdminMqttPage() {
     { field: "isActive", headerName: t("finStatus"), width: 130, cellRenderer: StatusCell, valueGetter: (p) => (p.data?.isActive ? "active" : "suspended") },
     { field: "maxConnection", headerName: t("mqttMaxConnection"), width: 130 },
     { field: "createdAt", headerName: t("mqCreated"), width: 130, sort: "desc", cellRenderer: DateCell },
-    { colId: "actions", headerName: "", width: 100, sortable: false, cellRenderer: CredActions },
+    { colId: "actions", headerName: "", width: 100, pinned: "right", sortable: false, cellRenderer: CredActions },
   ], [t]);
   const clientCols = useMemo<ColDef<Client>[]>(() => [
     { field: "user", headerName: t("amOwner"), flex: 1.3, minWidth: 200, sortable: false, cellRenderer: OwnerCell },
