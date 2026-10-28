@@ -8,7 +8,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getJson } from "@/lib/getJson";
 import { inRange } from "@/lib/dateRange";
 import DateRangeFilter from "@/components/user-dashboard/DateRangeFilter";
-import MqttTabs from "@/components/dashboard/MqttTabs";
 import DataGrid, { MonoCell, DateTimeCell } from "@/components/dashboard/DataGrid";
 import { PageHeader, Panel, EmptyState, SkeletonRows, Dialog, CopyChip, buttonClass, inputClass, cn } from "@/components/dashboard/ui";
 
@@ -66,7 +65,7 @@ export default function UserMqttMessagesPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t("mqttPayloads")} description={t("mqttPayloadsDesc")} tabs={<MqttTabs />} />
+      <PageHeader title={t("mqttPayloads")} description={t("mqttPayloadsDesc")} />
 
       <Panel bodyClassName="p-0">
         <div className="flex flex-wrap items-end justify-between gap-4 border-b border-gray-100 px-5 py-4 dark:border-gray-800">

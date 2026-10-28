@@ -10,7 +10,6 @@ import { useMqttLive, type MqttActivityEvent } from "@/context/MqttLiveContext";
 import { getJson } from "@/lib/getJson";
 import { MQTT_HOST, MQTT_PORT_TCP, MQTT_PORT_TLS, MQTT_WS_URL } from "@/lib/mqttEndpoints";
 import { SNIPPET_TABS, buildSnippet, type SnippetId } from "@/lib/mqttSnippets";
-import MqttTabs from "@/components/dashboard/MqttTabs";
 import {
   PageHeader, Panel, CopyField, CopyChip, StatusBadge, EmptyState, SkeletonRows, QuotaMeter,
   Dialog, ConfirmDialog, Field, inputClass, buttonClass, cn, useFormatNumber,
@@ -174,7 +173,7 @@ export default function UserMqttPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t("mqttDashboardTitle")} description={t("mqttDashboardDesc")} tabs={<MqttTabs />} />
+      <PageHeader title={t("mqttDashboardTitle")} description={t("mqttDashboardDesc")} />
 
       {loadFailed && <p role="alert" className="rounded-xl border border-error-200 bg-error-50 p-3 text-sm text-error-700 dark:border-error-500/20 dark:bg-error-500/10 dark:text-error-400">{t("ovLoadFailed")}</p>}
 

@@ -179,32 +179,6 @@ export function PageHeader({ title, description, actions, tabs }: { title: React
   );
 }
 
-/** Underlined route tabs (e.g. MQTT Overview · Activity · Messages). */
-export function RouteTabs({ items, active }: { items: { href: string; label: React.ReactNode }[]; active: string }) {
-  return (
-    <nav className="-mb-px flex gap-1 overflow-x-auto border-b border-gray-200 no-scrollbar dark:border-gray-800">
-      {items.map((it) => {
-        const on = it.href === active;
-        return (
-          <Link
-            key={it.href}
-            href={it.href}
-            aria-current={on ? "page" : undefined}
-            className={cn(
-              "whitespace-nowrap border-b-2 px-3 pb-2.5 pt-1 text-sm font-medium transition",
-              on
-                ? "border-brand-500 text-brand-600 dark:text-brand-400"
-                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200",
-            )}
-          >
-            {it.label}
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
 /** Filter pills with counts (All · Pending · Approved…). */
 export function FilterPills<K extends string>({ items, value, onChange }: { items: { key: K; label: React.ReactNode; count?: number }[]; value: K; onChange: (k: K) => void }) {
   const fmt = useFormatNumber();

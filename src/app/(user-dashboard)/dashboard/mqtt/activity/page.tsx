@@ -8,7 +8,6 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useMqttLive, type MqttActivityEvent } from "@/context/MqttLiveContext";
 import { getJson } from "@/lib/getJson";
 import DateRangeFilter from "@/components/user-dashboard/DateRangeFilter";
-import MqttTabs from "@/components/dashboard/MqttTabs";
 import DataGrid, { MonoCell, DateTimeCell, StatusCell } from "@/components/dashboard/DataGrid";
 import { PageHeader, Panel, EmptyState, SkeletonRows, FilterPills, StatusBadge } from "@/components/dashboard/ui";
 import { inRange } from "@/lib/dateRange";
@@ -65,7 +64,6 @@ export default function UserMqttActivityPage() {
         title={t("mqttActivity")}
         description={t("mqttActivityDesc")}
         actions={<StatusBadge status="online" label={t("msgLive")} pulse />}
-        tabs={<MqttTabs />}
       />
 
       <Panel bodyClassName="p-0">
