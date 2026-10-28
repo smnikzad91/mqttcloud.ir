@@ -343,7 +343,7 @@ export function Dialog({ open, onClose, title, description, children, footer, si
 }
 
 /** Destructive confirmation — replaces both window.confirm() and the old DeleteConfirmModal styling. */
-export function ConfirmDialog({ open, onClose, onConfirm, title, subject, warning, confirmLabel, cancelLabel, busy }: { open: boolean; onClose: () => void; onConfirm: () => void; title: React.ReactNode; subject?: React.ReactNode; warning?: React.ReactNode; confirmLabel: React.ReactNode; cancelLabel: React.ReactNode; busy?: boolean }) {
+export function ConfirmDialog({ open, onClose, onConfirm, title, subject, warning, confirmLabel, cancelLabel, busy, tone = "danger" }: { open: boolean; onClose: () => void; onConfirm: () => void; title: React.ReactNode; subject?: React.ReactNode; warning?: React.ReactNode; confirmLabel: React.ReactNode; cancelLabel: React.ReactNode; busy?: boolean; tone?: "danger" | "primary" }) {
   return (
     <Dialog
       open={open}
@@ -352,12 +352,12 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, subject, warnin
       footer={
         <>
           <button type="button" onClick={onClose} disabled={busy} className={buttonClass("secondary")}>{cancelLabel}</button>
-          <button type="button" onClick={onConfirm} disabled={busy} className={buttonClass("danger")}>{busy ? "…" : confirmLabel}</button>
+          <button type="button" onClick={onConfirm} disabled={busy} className={buttonClass(tone)}>{busy ? "…" : confirmLabel}</button>
         </>
       }
     >
       {(subject || warning) && (
-        <div className="space-y-2 rounded-xl border border-error-200 bg-error-50/60 p-3.5 text-sm dark:border-error-500/20 dark:bg-error-500/5">
+        <div className={cn("space-y-2 rounded-xl border p-3.5 text-sm", tone === "danger" ? "border-error-200 bg-error-50/60 dark:border-error-500/20 dark:bg-error-500/5" : "border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-white/[0.03]")}>
           {subject && <p dir="auto" className="font-semibold text-gray-900 dark:text-white">{subject}</p>}
           {warning && <p className="text-gray-600 dark:text-gray-300">{warning}</p>}
         </div>

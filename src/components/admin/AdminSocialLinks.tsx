@@ -1,380 +1,117 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { AgGridReact } from "ag-grid-react";
-import { themeQuartz, type ColDef } from "ag-grid-community";
-import { PencilIcon, TrashBinIcon } from "@/icons";
+import { useState } from "react";
+import { Plus, Share2, ExternalLink } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
-import { useTheme } from "@/context/ThemeContext";
-import { Modal } from "@/components/ui/modal";
-import DeleteConfirmModal from "@/components/admin/DeleteConfirmModal";
-import { toast } from "sonner";
-import { SocialIcon, PLATFORM_LABELS } from "@/components/common/SocialIcon";
+import { SocialIcon, PLATFORM_LABELS, PLATFORM_LABELS_FA } from "@/components/common/SocialIcon";
 import type { SocialPlatform } from "@/models/SocialLink";
+import OrderedList, { Switch, useOrderedCrud } from "@/components/dashboard/OrderedList";
+import { PageHeader, Panel, EmptyState, SkeletonRows, Dialog, ConfirmDialog, Field, inputClass, buttonClass, cn } from "@/components/dashboard/ui";
 
-const PLATFORMS: SocialPlatform[] = [
-  "telegram","instagram","twitter","youtube",
-  "linkedin","whatsapp","discord","github","facebook","tiktok",
-];
+type SocialLink = { id: string; platform: SocialPlatform; url: string; label: string; order: number; active: boolean };
 
-interface SocialRow {
-  id: string;
-  platform: SocialPlatform;
-  url: string;
-  label: string;
-  active: boolean;
-  order: number;
-}
-
-type GridCtx = {
-  isRTL: boolean;
-  onEdit: (row: SocialRow) => void;
-  onDelete: (id: string, platform: SocialPlatform) => void;
-  onToggle: (id: string, current: boolean) => void;
-  labels: { edit: string; del: string; active: string; inactive: string };
-};
-
-// ── Themes ─────────────────────────────────────────────────────────────────────
-const agLight = themeQuartz.withParams({
-  accentColor: "#465fff", backgroundColor: "#ffffff", foregroundColor: "#111827",
-  borderColor: "#e5e7eb", chromeBackgroundColor: "#f9fafb", headerTextColor: "#6b7280",
-  rowHoverColor: "#f9fafb", columnBorder: false, rowBorder: { color: "#f3f4f6" },
-  fontSize: 14, fontFamily: "inherit", rowVerticalPaddingScale: 1.3, headerFontSize: 12,
-});
-const agDark = themeQuartz.withParams({
-  accentColor: "#465fff", backgroundColor: "#111827", foregroundColor: "#f9fafb",
-  borderColor: "#374151", chromeBackgroundColor: "#111827", headerTextColor: "#9ca3af",
-  rowHoverColor: "rgba(255,255,255,0.02)", columnBorder: false, rowBorder: { color: "#1f2937" },
-  fontSize: 14, fontFamily: "inherit", rowVerticalPaddingScale: 1.3, headerFontSize: 12,
-});
-
-// ── Cell Renderers ─────────────────────────────────────────────────────────────
-function PlatformCell({ data }: { data: SocialRow }) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
-        <SocialIcon platform={data.platform} className="h-4 w-4" />
-      </span>
-      <span className="text-sm font-medium text-gray-800 dark:text-white">{PLATFORM_LABELS[data.platform]}</span>
-    </div>
-  );
-}
-
-function UrlCell({ value }: { value: string }) {
-  return (
-    <a href={value} target="_blank" rel="noopener noreferrer"
-      className="text-sm text-brand-600 hover:underline dark:text-brand-400 truncate block max-w-[240px]">
-      {value}
-    </a>
-  );
-}
-
-function StatusCell({ data, context }: { data: SocialRow; context: GridCtx }) {
-  return (
-    <button
-      onClick={() => context.onToggle(data.id, data.active)}
-      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
-        data.active
-          ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-500/10 dark:text-green-400"
-          : "bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-500"
-      }`}
-    >
-      {data.active ? context.labels.active : context.labels.inactive}
-    </button>
-  );
-}
-
-function IconBtn({ label, color, children, onClick }: {
-  label: string; color: string; children: React.ReactNode; onClick: () => void;
-}) {
-  const [tip, setTip] = useState<{ x: number; y: number } | null>(null);
-  const enter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    setTip({ x: r.left + r.width / 2, y: r.bottom + 8 });
-  };
-  return (
-    <>
-      <button onClick={onClick} className={`rounded-lg p-1.5 transition-colors ${color}`}
-        onMouseEnter={enter} onMouseLeave={() => setTip(null)} aria-label={label}>
-        {children}
-      </button>
-      {tip && typeof document !== "undefined" && createPortal(
-        <div style={{ position: "fixed", left: tip.x, top: tip.y, transform: "translateX(-50%)", zIndex: 9999, pointerEvents: "none" }}
-          className="rounded px-2 py-1 text-xs text-white bg-gray-800 whitespace-nowrap">{label}</div>,
-        document.body
-      )}
-    </>
-  );
-}
-
-function ActionsCell({ data, context }: { data: SocialRow; context: GridCtx }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <IconBtn label={context.labels.edit} color="text-green-600 hover:bg-green-50 dark:text-green-400 dark:hover:bg-green-500/10" onClick={() => context.onEdit(data)}>
-        <PencilIcon className="w-4 h-4" />
-      </IconBtn>
-      <IconBtn label={context.labels.del} color="text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10" onClick={() => context.onDelete(data.id, data.platform)}>
-        <TrashBinIcon className="w-4 h-4" />
-      </IconBtn>
-    </div>
-  );
-}
-
-// ── Page ───────────────────────────────────────────────────────────────────────
-const defaultForm = { platform: "telegram" as SocialPlatform, url: "", label: "", active: true, order: 0 };
-
-const inputClass = "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white";
-const labelClass = "block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1";
-
-function FormFields({ form, onChange, t }: {
-  form: typeof defaultForm;
-  onChange: (f: typeof defaultForm) => void;
-  t: ReturnType<typeof useT>;
-}) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <label className={labelClass}>{t("socialFieldPlatform")}</label>
-        <select value={form.platform} onChange={(e) => onChange({ ...form, platform: e.target.value as SocialPlatform })} className={inputClass}>
-          {PLATFORMS.map((p) => (
-            <option key={p} value={p}>{PLATFORM_LABELS[p]}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className={labelClass}>{t("socialFieldUrl")}</label>
-        <input required type="url" value={form.url} onChange={(e) => onChange({ ...form, url: e.target.value })}
-          placeholder={t("socialFieldUrlPlaceholder")} className={inputClass} />
-      </div>
-      <div>
-        <label className={labelClass}>{t("socialFieldLabel")}</label>
-        <input type="text" value={form.label} onChange={(e) => onChange({ ...form, label: e.target.value.replace(/^#/, "") })}
-          placeholder={t("socialFieldLabelPlaceholder")} className={inputClass} />
-      </div>
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <label className={labelClass}>{t("socialFieldOrder")}</label>
-          <input type="number" value={form.order} onChange={(e) => onChange({ ...form, order: Number(e.target.value) })}
-            className={inputClass} />
-        </div>
-        <div className="flex items-center gap-2 pt-5">
-          <input type="checkbox" id="active-toggle" checked={form.active} onChange={(e) => onChange({ ...form, active: e.target.checked })}
-            className="h-4 w-4 rounded border-gray-300 accent-brand-500" />
-          <label htmlFor="active-toggle" className="text-sm text-gray-700 dark:text-gray-300">{t("socialFieldActive")}</label>
-        </div>
-      </div>
-    </div>
-  );
-}
+const PLATFORMS: SocialPlatform[] = ["telegram", "instagram", "twitter", "youtube", "linkedin", "whatsapp", "discord", "github", "facebook", "tiktok"];
+const blank = { platform: "telegram" as SocialPlatform, url: "", label: "", active: true };
 
 export default function AdminSocialLinks() {
   const t = useT();
   const { lang } = useLanguage();
-  const isRTL = lang === "fa";
-  const { theme } = useTheme();
+  const names = lang === "fa" ? PLATFORM_LABELS_FA : PLATFORM_LABELS;
+  const crud = useOrderedCrud<SocialLink>("/api/admin/social-links", { saved: t("socialSaved"), added: t("socialSaved"), deleted: t("socialDeleted"), orderSaved: t("olOrderSaved"), error: t("saveError") });
 
-  const [rows, setRows] = useState<SocialRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<SocialLink | "new" | null>(null);
+  const [form, setForm] = useState(blank);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState<SocialLink | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
-  const [addOpen, setAddOpen] = useState(false);
-  const [addForm, setAddForm] = useState(defaultForm);
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState("");
+  const openNew = () => { setForm(blank); setError(""); setEditing("new"); };
+  const openEdit = (l: SocialLink) => { setForm({ platform: l.platform, url: l.url, label: (l.label || "").replace(/^#/, ""), active: l.active }); setError(""); setEditing(l); };
 
-  const [editTarget, setEditTarget] = useState<SocialRow | null>(null);
-  const [editForm, setEditForm] = useState(defaultForm);
-  const [editSaving, setEditSaving] = useState(false);
-  const [editError, setEditError] = useState("");
-
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; platform: SocialPlatform } | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const fetchLinks = () => {
-    setLoading(true);
-    fetch("/api/admin/social-links")
-      .then((r) => r.json())
-      .then((d) => setRows(Array.isArray(d) ? d : []))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { queueMicrotask(fetchLinks); }, []);
-
-  const handleAdd = async (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    setAddError("");
-    setAdding(true);
-    const res = await fetch("/api/admin/social-links", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(addForm),
-    });
-    const data = await res.json();
-    setAdding(false);
-    if (!res.ok) { setAddError(data.error ?? "Failed to create"); return; }
-    toast.success(t("socialSaved"));
-    setAddOpen(false);
-    setAddForm(defaultForm);
-    fetchLinks();
+    setSaving(true);
+    const nextOrder = ((crud.items ?? []).at(-1)?.order ?? 0) + 10;
+    const err = editing === "new" ? await crud.create({ ...form, order: nextOrder }) : editing ? await crud.update(editing.id, form) : null;
+    setSaving(false);
+    if (err) setError(err);
+    else setEditing(null);
   };
-
-  const startEdit = (row: SocialRow) => {
-    setEditTarget(row);
-    setEditForm({ platform: row.platform, url: row.url, label: (row.label || "").replace(/^#/, ""), active: row.active, order: row.order });
-    setEditError("");
-  };
-
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editTarget) return;
-    setEditError("");
-    setEditSaving(true);
-    const res = await fetch(`/api/admin/social-links/${editTarget.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editForm),
-    });
-    const data = await res.json();
-    setEditSaving(false);
-    if (!res.ok) { setEditError(data.error ?? "Failed to save"); return; }
-    toast.success(t("socialSaved"));
-    setEditTarget(null);
-    fetchLinks();
-  };
-
-  const handleToggle = async (id: string, current: boolean) => {
-    await fetch(`/api/admin/social-links/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: !current }),
-    });
-    fetchLinks();
-  };
-
-  const handleDelete = (id: string, platform: SocialPlatform) => setDeleteTarget({ id, platform });
-
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
-    setIsDeleting(true);
-    await fetch(`/api/admin/social-links/${deleteTarget.id}`, { method: "DELETE" });
-    toast.success(t("socialDeleted"));
-    setDeleteTarget(null);
-    setIsDeleting(false);
-    fetchLinks();
-  };
-
-  const gridContext = useMemo<GridCtx>(() => ({
-    isRTL,
-    onEdit: startEdit,
-    onDelete: handleDelete,
-    onToggle: handleToggle,
-    labels: { edit: t("socialEdit"), del: t("socialDelete"), active: t("socialActive"), inactive: t("socialInactive") },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [isRTL, lang]);
-
-  const colDefs = useMemo<ColDef<SocialRow>[]>(() => {
-    const cols: ColDef<SocialRow>[] = [
-      { headerName: "#", width: 60, sortable: false, filter: false, valueGetter: (p) => (p.node?.rowIndex ?? 0) + 1 },
-      { field: "platform", headerName: t("socialColPlatform"), width: 160, sortable: true, filter: false, cellRenderer: PlatformCell },
-      { field: "url", headerName: t("socialColUrl"), flex: 2, minWidth: 200, sortable: false, filter: false, cellRenderer: UrlCell },
-      { field: "label", headerName: t("socialColLabel"), width: 150, sortable: false, filter: false, valueFormatter: (p) => p.value ? p.value.replace(/^#/, "") : "" },
-      { field: "order", headerName: t("socialColOrder"), width: 90, sortable: true, filter: false },
-      { field: "active", headerName: t("socialColStatus"), width: 110, sortable: true, filter: false, cellRenderer: StatusCell },
-      { headerName: t("socialColActions"), width: 110, sortable: false, filter: false, cellRenderer: ActionsCell },
-    ];
-    return isRTL ? [...cols].reverse() : cols;
-  }, [t, isRTL]);
 
   return (
-    <div className="p-6 space-y-6" dir={isRTL ? "rtl" : "ltr"}>
-
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("socialLinksTitle")}</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{rows.length} {t("socialLinksTotal")}</p>
-        </div>
-        <button onClick={() => { setAddForm(defaultForm); setAddError(""); setAddOpen(true); }}
-          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600">
-          {t("socialAddLink")}
-        </button>
-      </div>
-
-      {/* Grid */}
-      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {loading ? (
-          <div className="p-10 text-center text-sm text-gray-400">{t("socialLoading")}</div>
-        ) : rows.length === 0 ? (
-          <div className="p-10 text-center text-sm text-gray-400">{t("socialEmpty")}</div>
-        ) : (
-          <div className="ag-blog-table">
-            <AgGridReact<SocialRow>
-              rowData={rows}
-              columnDefs={colDefs}
-              theme={theme === "dark" ? agDark : agLight}
-              domLayout="autoHeight"
-              rowHeight={56}
-              headerHeight={44}
-              getRowId={(p) => p.data.id}
-              context={gridContext}
-              suppressMovableColumns
-              suppressCellFocus
-              suppressRowClickSelection
-              suppressHorizontalScroll
+    <div className="space-y-6">
+      <PageHeader
+        title={t("socialLinksTitle")}
+        description={t("socialDesc")}
+        actions={<button type="button" onClick={openNew} className={buttonClass("primary")}><Plus className="h-4 w-4" />{t("socialAddModal")}</button>}
+      />
+      <Panel bodyClassName="p-0" title={crud.items?.length ? `${crud.items.length} ${t("socialLinksTotal")}` : undefined} description={crud.items?.length ? t("olOrderHint") : undefined}>
+        {crud.items === null ? <div className="p-5"><SkeletonRows rows={4} /></div>
+          : crud.items.length === 0 ? <EmptyState icon={<Share2 className="h-6 w-6" />} title={t("socialEmpty")} action={<button type="button" onClick={openNew} className={buttonClass("primary", "sm")}><Plus className="h-4 w-4" />{t("socialAddModal")}</button>} />
+          : (
+            <OrderedList
+              items={crud.items}
+              busy={crud.busy}
+              onMove={crud.move}
+              onToggle={(l, active) => crud.update(l.id, { active }, true)}
+              onEdit={openEdit}
+              onDelete={setDeleting}
+              render={(l) => (
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-gray-200"><SocialIcon platform={l.platform} className="h-4 w-4" /></span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{l.label ? l.label.replace(/^#/, "") : names[l.platform]}</p>
+                    <a href={l.url} target="_blank" rel="noopener noreferrer" dir="ltr" className="flex items-center gap-1 truncate font-mono-signal text-xs text-gray-400 hover:text-brand-600">
+                      <span className="truncate">{l.url}</span><ExternalLink className="h-3 w-3 shrink-0" />
+                    </a>
+                  </div>
+                </div>
+              )}
             />
-          </div>
-        )}
-      </div>
+          )}
+      </Panel>
 
-      {/* Add Modal */}
-      <Modal isOpen={addOpen} onClose={() => setAddOpen(false)} showCloseButton={false} className="max-w-md mx-4">
-        <form onSubmit={handleAdd} className="p-6 sm:p-8 space-y-4">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t("socialAddModal")}</h3>
-          <FormFields form={addForm} onChange={setAddForm} t={t} />
-          {addError && <p className="text-xs text-red-500">{addError}</p>}
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setAddOpen(false)} disabled={adding}
-              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-              {t("socialCancel")}
-            </button>
-            <button type="submit" disabled={adding}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50">
-              {adding ? t("socialSaving") : t("socialSave")}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Edit Modal */}
-      <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} showCloseButton={false} className="max-w-md mx-4">
-        <form onSubmit={handleSaveEdit} className="p-6 sm:p-8 space-y-4">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t("socialEditModal")}</h3>
-          <FormFields form={editForm} onChange={setEditForm} t={t} />
-          {editError && <p className="text-xs text-red-500">{editError}</p>}
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setEditTarget(null)} disabled={editSaving}
-              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-              {t("socialCancel")}
-            </button>
-            <button type="submit" disabled={editSaving}
-              className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-50">
-              {editSaving ? t("socialSaving") : t("socialSaveChanges")}
-            </button>
+      <Dialog open={editing !== null} onClose={() => !saving && setEditing(null)} title={editing === "new" ? t("socialAddModal") : t("socialEditModal")}>
+        <form onSubmit={save} className="space-y-4">
+          <Field label={t("socialColPlatform")}>
+            <div className="grid grid-cols-5 gap-1.5">
+              {PLATFORMS.map((p) => (
+                <button key={p} type="button" onClick={() => setForm({ ...form, platform: p })} aria-pressed={form.platform === p} title={names[p]} aria-label={names[p]}
+                  className={cn("flex h-11 items-center justify-center rounded-xl border transition", form.platform === p ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300" : "border-gray-200 text-gray-600 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300")}>
+                  <SocialIcon platform={p} className="h-5 w-5" />
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{names[form.platform]}</p>
+          </Field>
+          <Field label={t("socialColUrl")} htmlFor="sl-url">
+            <input id="sl-url" required type="url" dir="ltr" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder={t("socialFieldUrlPlaceholder")} className={cn(inputClass, "font-mono-signal")} />
+          </Field>
+          <Field label={t("socialFieldLabel")} htmlFor="sl-label">
+            <input id="sl-label" dir="auto" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value.replace(/^#/, "") })} placeholder={t("socialFieldLabelPlaceholder")} className={inputClass} />
+          </Field>
+          <label className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+            <Switch checked={form.active} onChange={(v) => setForm({ ...form, active: v })} label={t("olActive")} />{t("olActive")}
+          </label>
+          {error && <p role="alert" className="text-sm text-error-600 dark:text-error-400">{error}</p>}
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setEditing(null)} disabled={saving} className={buttonClass("secondary")}>{t("socialCancel")}</button>
+            <button type="submit" disabled={saving} className={buttonClass("primary")}>{saving ? t("socialSaving") : editing === "new" ? t("socialSave") : t("socialSaveChanges")}</button>
           </div>
         </form>
-      </Modal>
+      </Dialog>
 
-      {/* Delete Modal */}
-      <DeleteConfirmModal
-        isOpen={!!deleteTarget}
-        title={t("socialDeleteConfirm")}
-        itemName={deleteTarget ? PLATFORM_LABELS[deleteTarget.platform] : ""}
-        confirmLabel={t("socialDelete")}
+      <ConfirmDialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={async () => { if (!deleting) return; setDeleteBusy(true); const err = await crud.remove(deleting.id); setDeleteBusy(false); if (!err) setDeleting(null); }}
+        busy={deleteBusy}
+        title={t("socialDelete")}
+        subject={deleting && <span dir="ltr">{deleting.url}</span>}
+        confirmLabel={t("socialDeleteConfirm")}
         cancelLabel={t("socialCancel")}
-        isDeleting={isDeleting}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

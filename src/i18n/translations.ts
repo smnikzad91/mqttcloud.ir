@@ -949,6 +949,29 @@ const translations = {
     afApprovedSum: "Approved total",
     afRejectedCount: "Rejected",
     afRejectNote: "Reason (shown to the user)",
+
+    // Admin contact (redesign)
+    acDesc: "Messages sent from the public contact form.",
+    acSearch: "Search name, email or subject…",
+    acReplyEmail: "Reply by email",
+    acReplyHint: "Opens your mail app. Mark it as replied once you've sent it.",
+    acDeleteTitle: "Delete this message?",
+
+    // Ordered CMS lists (FAQs, announcements, social links)
+    olMoveUp: "Move up",
+    olMoveDown: "Move down",
+    olActive: "Shown on the site",
+    olInactive: "Hidden",
+    olOrderSaved: "Order saved.",
+    olOrderHint: "Shown on the site in this order.",
+    faqDesc: "Questions shown on the public FAQ page.",
+    annDesc: "The bar across the top of the public site. Only the first active one is shown.",
+    annTelegramWarn: "Turning this on also posts it to the Telegram channel.",
+    annPreview: "Preview",
+    annLive: "Live on site",
+    socialDesc: "Links shown in the public site's footer and contact page.",
+    faqDeleteTitle: "Delete this FAQ?",
+    annDeleteTitle: "Delete this announcement?",
   },
 
   fa: {
@@ -1901,6 +1924,29 @@ const translations = {
     afApprovedSum: "مجموع تاییدشده",
     afRejectedCount: "ردشده",
     afRejectNote: "دلیل (به کاربر نمایش داده می‌شود)",
+
+    // Admin contact (redesign)
+    acDesc: "پیام‌های ارسال‌شده از فرم تماس سایت.",
+    acSearch: "جستجوی نام، ایمیل یا موضوع…",
+    acReplyEmail: "پاسخ با ایمیل",
+    acReplyHint: "برنامه ایمیل شما باز می‌شود. پس از ارسال، پیام را «پاسخ داده شده» علامت بزنید.",
+    acDeleteTitle: "این پیام حذف شود؟",
+
+    // Ordered CMS lists (FAQs, announcements, social links)
+    olMoveUp: "انتقال به بالا",
+    olMoveDown: "انتقال به پایین",
+    olActive: "نمایش در سایت",
+    olInactive: "پنهان",
+    olOrderSaved: "ترتیب ذخیره شد.",
+    olOrderHint: "به همین ترتیب در سایت نمایش داده می‌شوند.",
+    faqDesc: "پرسش‌هایی که در صفحه سوالات متداول سایت نمایش داده می‌شوند.",
+    annDesc: "نوار بالای سایت. فقط اولین مورد فعال نمایش داده می‌شود.",
+    annTelegramWarn: "فعال کردن این مورد آن را در کانال تلگرام هم منتشر می‌کند.",
+    annPreview: "پیش‌نمایش",
+    annLive: "در حال نمایش در سایت",
+    socialDesc: "لینک‌هایی که در فوتر و صفحه تماس سایت نمایش داده می‌شوند.",
+    faqDeleteTitle: "این سوال حذف شود؟",
+    annDeleteTitle: "این اعلان حذف شود؟",
   },
 } as const;
 

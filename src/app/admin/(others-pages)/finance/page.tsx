@@ -205,6 +205,7 @@ export default function AdminFinancePage() {
         subject={subject(approving)}
         warning={<>{t("afApproveWarn")}{approving?.payment && <><br />{t("afNodepassNote")}</>}</>}
         confirmLabel={t("approve")}
+        tone="primary"
         cancelLabel={t("cancel")}
       />
 
