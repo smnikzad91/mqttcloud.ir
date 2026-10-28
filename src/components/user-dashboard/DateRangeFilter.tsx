@@ -51,7 +51,7 @@ export default function DateRangeFilter({
   const clear = () => { onFromChange(""); onToChange(""); };
 
   return (
-    <div className={`flex flex-wrap items-end gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
+    <div className="flex flex-wrap items-end gap-3">
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{t("dateFrom")}</label>
         <DatePicker
