@@ -1,19 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AgGridReact } from "ag-grid-react";
-import { themeQuartz, type ColDef } from "ag-grid-community";
+import type { ColDef, ICellRendererParams } from "ag-grid-community";
+import { Search, Check, X, Trash2, Receipt, Clock, BadgeCheck, Ban } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
-import { useTheme } from "@/context/ThemeContext";
-import { Modal } from "@/components/ui/modal";
+import { getJson } from "@/lib/getJson";
+import DataGrid, { AmountCell, DateTimeCell, StatusCell } from "@/components/dashboard/DataGrid";
+import {
+  PageHeader, Panel, StatTile, EmptyState, SkeletonRows, FilterPills, CopyChip, Dialog, ConfirmDialog, Field,
+  inputClass, buttonClass, cn, useFormatNumber,
+} from "@/components/dashboard/ui";
 
 type Deposit = {
   id: string;
   amount: number;
-  description: string;
   receiptImage: string;
   status: "pending" | "approved" | "rejected";
   adminNote: string;
@@ -21,418 +23,213 @@ type Deposit = {
   createdAt: string;
   user: { name: string; email: string } | null;
   card: { cardNumber: string; bankName: string } | null;
+  payment: { trackingCode: string; payableRial: string; statusUrl: string } | null;
 };
+type Filter = "all" | Deposit["status"];
 
-type DepositFilter = "all" | "pending" | "approved" | "rejected";
-
-// ── AG Grid Themes ─────────────────────────────────────────────────────────────
-const agLight = themeQuartz.withParams({
-  accentColor: "#465fff", backgroundColor: "#ffffff", foregroundColor: "#111827",
-  borderColor: "#e5e7eb", chromeBackgroundColor: "#f9fafb", headerTextColor: "#6b7280",
-  rowHoverColor: "#f9fafb", columnBorder: false, rowBorder: { color: "#f3f4f6" },
-  fontSize: 14, fontFamily: "inherit", rowVerticalPaddingScale: 1.3, headerFontSize: 12,
-});
-const agDark = themeQuartz.withParams({
-  accentColor: "#465fff", backgroundColor: "#111827", foregroundColor: "#f9fafb",
-  borderColor: "#374151", chromeBackgroundColor: "#111827", headerTextColor: "#9ca3af",
-  rowHoverColor: "rgba(255,255,255,0.02)", columnBorder: false, rowBorder: { color: "#1f2937" },
-  fontSize: 14, fontFamily: "inherit", rowVerticalPaddingScale: 1.3, headerFontSize: 12,
-});
-
-// ── Cell Renderers ─────────────────────────────────────────────────────────────
-const STATUS_COLORS: Record<string, string> = {
-  pending:  "bg-yellow-50 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400",
-  approved: "bg-green-50  text-green-700  dark:bg-green-500/10  dark:text-green-400",
-  rejected: "bg-red-50    text-red-700    dark:bg-red-500/10    dark:text-red-400",
+type Ctx = {
+  isRTL: boolean;
+  unit: string;
+  t: ReturnType<typeof useT>;
+  neverLabel: string;
+  statusLabels: Record<string, string>;
+  busyId: string | null;
+  onApprove: (d: Deposit) => void;
+  onReject: (d: Deposit) => void;
+  onDelete: (d: Deposit) => void;
 };
-
-function StatusCell({ value, context }: { value: string; context: { isRTL: boolean } }) {
-  const labels: Record<string, [string, string]> = {
-    pending:  ["Pending",  "در انتظار"],
-    approved: ["Approved", "تأیید شده"],
-    rejected: ["Rejected", "رد شده"],
-  };
-  const label = labels[value]?.[context.isRTL ? 1 : 0] ?? value;
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[value] ?? ""}`}>
-      {label}
-    </span>
-  );
-}
 
 function UserCell({ value }: { value: Deposit["user"] }) {
   if (!value) return <span className="text-gray-400">—</span>;
   return (
-    <div dir="ltr" className="flex flex-col justify-center leading-tight">
-      <span className="text-sm font-medium text-gray-800 dark:text-white">{value.name}</span>
-      <span className="text-xs text-gray-400">{value.email}</span>
+    <div className="flex h-full flex-col justify-center leading-tight">
+      <span className="truncate text-sm text-gray-900 dark:text-white">{value.name || "—"}</span>
+      <span dir="ltr" className="truncate text-start text-xs text-gray-500 dark:text-gray-400">{value.email}</span>
     </div>
   );
 }
 
-function CardCell({ value }: { value: Deposit["card"] }) {
-  if (!value) return <span className="text-gray-400">—</span>;
-  const last4 = value.cardNumber.slice(-4);
-  return (
-    <div className="leading-tight">
-      <span dir="ltr" className="text-sm font-medium text-gray-700 dark:text-gray-200">****&nbsp;{last4}</span>
-      <span className="ms-1.5 text-xs text-gray-400">{value.bankName}</span>
-    </div>
-  );
+function TrackingCell({ data }: ICellRendererParams<Deposit>) {
+  const code = data?.interceptionCode || data?.payment?.trackingCode;
+  return <div className="flex h-full items-center">{code ? <CopyChip value={code} /> : <span className="text-gray-400">—</span>}</div>;
 }
 
-function AmountCell({ value }: { value: number }) {
-  return <span dir="ltr" className="font-semibold">{value.toLocaleString()}</span>;
+function NoteCell({ data, context }: ICellRendererParams<Deposit> & { context: Ctx }) {
+  if (!data) return null;
+  if (data.receiptImage) return <a href={data.receiptImage} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">{context.t("finReceipt")}</a>;
+  if (data.adminNote) return <span className="text-xs text-gray-600 dark:text-gray-300">{data.adminNote}</span>;
+  return data.payment ? <span className="text-xs text-gray-400">nodepass</span> : <span className="text-gray-400">—</span>;
 }
 
-function DateCell({ value, context }: { value: string; context: { isRTL: boolean } }) {
-  const formatted = new Date(value).toLocaleDateString(context.isRTL ? "fa-IR" : "en-US", {
-    year: "numeric", month: "short", day: "numeric",
-  });
-  return <span dir="ltr">{formatted}</span>;
-}
-
-function ReceiptCell({ value }: { value: string }) {
-  if (!value) return <span className="text-xs text-gray-400">—</span>;
-  return (
-    <a href={value} target="_blank" rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-xs text-brand-500 hover:underline">
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-      </svg>
-      View
-    </a>
-  );
-}
-
-function InterceptionCodeCell({ value, context }: { value: string; context: { copiedLabel: string } }) {
-  const [copied, setCopied] = useState(false);
-  if (!value) return <span className="text-xs text-gray-400">—</span>;
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value);
-    toast.success(value, { description: context.copiedLabel });
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-  return (
-    <div dir="ltr" className="flex items-center gap-1.5">
-      <span className="font-mono text-xs text-gray-600 dark:text-gray-300">{value}</span>
-      <button onClick={handleCopy} className="shrink-0 text-gray-400 hover:text-brand-500 transition-colors" aria-label="Copy tracking code">
-        {copied
-          ? <svg className="w-3.5 h-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-          : <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-        }
-      </button>
-    </div>
-  );
-}
-
-function AdminNoteCell({ value }: { value: string }) {
-  if (!value) return <span className="text-xs text-gray-400">—</span>;
-  return <span className="text-xs text-gray-600 dark:text-gray-300">{value}</span>;
-}
-
-type ActionCtx = {
-  isRTL: boolean;
-  onApprove: (id: string) => void;
-  onReject:  (id: string) => void;
-  onDelete:  (id: string) => void;
-  approveLabel: string;
-  rejectLabel:  string;
-  deleteLabel:  string;
-  copiedLabel:  string;
-};
-
-function ActionCell({ data, context }: { data: Deposit; context: ActionCtx }) {
-  const [tip, setTip] = useState<{ label: string; x: number; y: number } | null>(null);
-
-  const mkTip = (label: string) => (e: React.MouseEvent) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    setTip({ label, x: r.left + r.width / 2, y: r.bottom + 8 });
-  };
-
-  return (
-    <div className="flex items-center gap-1.5">
-      {data.status === "pending" && (
-        <>
-          <button
-            onClick={() => context.onApprove(data.id)}
-            aria-label={context.approveLabel}
-            className="rounded-lg bg-green-500 p-1.5 text-white hover:bg-green-600 transition-colors"
-            onMouseEnter={mkTip(context.approveLabel)}
-            onMouseLeave={() => setTip(null)}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/>
-            </svg>
-          </button>
-          <button
-            onClick={() => context.onReject(data.id)}
-            aria-label={context.rejectLabel}
-            className="rounded-lg bg-red-500 p-1.5 text-white hover:bg-red-600 transition-colors"
-            onMouseEnter={mkTip(context.rejectLabel)}
-            onMouseLeave={() => setTip(null)}
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
-        </>
-      )}
-      {data.status === "rejected" && (
-        <button
-          onClick={() => context.onDelete(data.id)}
-          aria-label={context.deleteLabel}
-          className="rounded-lg bg-red-400 p-1.5 text-white hover:bg-red-500 transition-colors"
-          onMouseEnter={mkTip(context.deleteLabel)}
-          onMouseLeave={() => setTip(null)}
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+function ActionsCell({ data, context }: ICellRendererParams<Deposit> & { context: Ctx }) {
+  if (!data) return null;
+  const busy = context.busyId === data.id;
+  // Mirrors what the API allows and keeps money moves to pending rows only:
+  // approve/reject pending, delete rejected.
+  if (data.status === "pending") {
+    return (
+      <div className="flex h-full items-center justify-end gap-1.5">
+        <button type="button" disabled={busy} onClick={() => context.onApprove(data)} className={cn(buttonClass("primary", "sm"), "!bg-success-600 hover:!bg-success-700")}>
+          <Check className="h-3.5 w-3.5" />{context.t("approve")}
         </button>
-      )}
-      {tip && typeof document !== "undefined" && createPortal(
-        <div style={{ position: "fixed", left: tip.x, top: tip.y, transform: "translateX(-50%)", zIndex: 9999, pointerEvents: "none" }}
-          className="px-2 py-1 text-xs text-white bg-gray-800 rounded whitespace-nowrap">
-          {tip.label}
-        </div>,
-        document.body
-      )}
-    </div>
-  );
+        <button type="button" disabled={busy} onClick={() => context.onReject(data)} className={buttonClass("secondary", "sm")}>
+          <X className="h-3.5 w-3.5" />{context.t("reject")}
+        </button>
+      </div>
+    );
+  }
+  if (data.status === "rejected") {
+    return (
+      <div className="flex h-full items-center justify-end">
+        <button type="button" disabled={busy} onClick={() => context.onDelete(data)} aria-label={context.t("delete")} title={context.t("delete")} className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-error-50 hover:text-error-600 dark:hover:bg-error-500/10">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+  return null;
 }
 
-// ── Page ───────────────────────────────────────────────────────────────────────
 export default function AdminFinancePage() {
-  const t         = useT();
-  const { lang }  = useLanguage();
-  const isRTL     = lang === "fa";
-  const { theme } = useTheme();
+  const t = useT();
+  const { lang } = useLanguage();
+  const isRTL = lang === "fa";
+  const fmt = useFormatNumber();
 
-  const [deposits, setDeposits]       = useState<Deposit[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [filter, setFilter]           = useState<DepositFilter>("all");
+  const [deposits, setDeposits] = useState<Deposit[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  // The approval queue is the default view.
+  const [filter, setFilter] = useState<Filter>("pending");
+  const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  // Reject modal
-  const [rejectId, setRejectId]       = useState<string | null>(null);
-  const [rejectNote, setRejectNote]   = useState("");
-  const [rejecting, setRejecting]     = useState(false);
+  const load = useCallback(() => getJson<Deposit[]>("/api/admin/finance/deposits").then((d) => { setFailed(!d); setDeposits(d ?? []); }), []);
+  useEffect(() => { queueMicrotask(load); }, [load]);
 
-  const load = () => {
-    setLoading(true);
-    fetch("/api/admin/finance/deposits")
-      .then((r) => r.json())
-      .then((d) => setDeposits(Array.isArray(d) ? d : []))
-      .catch(() => setDeposits([]))
-      .finally(() => setLoading(false));
-  };
-  useEffect(() => { queueMicrotask(load); }, []);
-
-  const handleApprove = async (id: string) => {
-    const res = await fetch(`/api/admin/finance/deposits/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "approved" }),
-    });
-    if (res.ok) { toast.success(t("depositApproved")); load(); }
-    else        { const d = await res.json(); toast.error(d.error || t("saveError")); }
+  const patch = async (d: Deposit, body: { status: "approved" | "rejected"; adminNote?: string }) => {
+    setBusyId(d.id);
+    const res = await fetch(`/api/admin/finance/deposits/${d.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    setBusyId(null);
+    if (!res.ok) { toast.error(data.error || t("saveError")); return false; }
+    toast.success(body.status === "approved" ? t("depositApproved") : t("depositRejected"));
+    load();
+    return true;
   };
 
-  const openRejectModal = (id: string) => { setRejectId(id); setRejectNote(""); };
+  const [approving, setApproving] = useState<Deposit | null>(null);
+  const [rejecting, setRejecting] = useState<Deposit | null>(null);
+  const [rejectNote, setRejectNote] = useState("");
+  const [deleting, setDeleting] = useState<Deposit | null>(null);
 
-  const handleReject = async () => {
-    if (!rejectId) return;
-    setRejecting(true);
-    const res = await fetch(`/api/admin/finance/deposits/${rejectId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "rejected", adminNote: rejectNote }),
-    });
-    setRejecting(false);
-    if (res.ok) { toast.success(t("depositRejected")); setRejectId(null); load(); }
-    else        { const d = await res.json(); toast.error(d.error || t("saveError")); }
+  const confirmApprove = async () => { if (approving && (await patch(approving, { status: "approved" }))) setApproving(null); };
+  const confirmReject = async (e: React.FormEvent) => { e.preventDefault(); if (rejecting && (await patch(rejecting, { status: "rejected", adminNote: rejectNote }))) setRejecting(null); };
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    setBusyId(deleting.id);
+    const res = await fetch(`/api/admin/finance/deposits/${deleting.id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    setBusyId(null);
+    if (!res.ok) return toast.error(data.error || t("saveError"));
+    toast.success(t("depositDeleted"));
+    setDeleting(null);
+    load();
   };
 
-  const handleDelete = async (id: string) => {
-    const res  = await fetch(`/api/admin/finance/deposits/${id}`, { method: "DELETE" });
-    const data = await res.json();
-    if (res.ok) { toast.success(t("depositDeleted")); load(); }
-    else        { toast.error(data.error || t("saveError")); }
-  };
+  const q = query.trim().toLowerCase();
+  const rows = useMemo(() => (deposits ?? []).filter((d) =>
+    (filter === "all" || d.status === filter) &&
+    (!q || (d.user?.name ?? "").toLowerCase().includes(q) || (d.user?.email ?? "").toLowerCase().includes(q) ||
+      (d.interceptionCode ?? "").toLowerCase().includes(q) || (d.payment?.trackingCode ?? "").toLowerCase().includes(q))), [deposits, filter, q]);
+  const count = (f: Filter) => (deposits ?? []).filter((d) => f === "all" || d.status === f).length;
+  const sum = (s: Deposit["status"]) => (deposits ?? []).filter((d) => d.status === s).reduce((a, d) => a + d.amount, 0);
 
-  const gridContext = useMemo<ActionCtx>(() => ({
-    isRTL,
-    onApprove:    handleApprove,
-    onReject:     openRejectModal,
-    onDelete:     handleDelete,
-    approveLabel: t("approve"),
-    rejectLabel:  t("reject"),
-    deleteLabel:  t("delete"),
-    copiedLabel:  t("copied"),
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [isRTL, t]);
+  const columns = useMemo<ColDef<Deposit>[]>(() => [
+    { field: "user", headerName: t("colUser"), flex: 1.4, minWidth: 200, sortable: false, cellRenderer: UserCell },
+    { field: "amount", headerName: t("finAmount"), width: 150, cellRenderer: AmountCell },
+    { field: "status", headerName: t("finStatus"), width: 130, cellRenderer: StatusCell },
+    { field: "createdAt", headerName: t("finDate"), width: 170, sort: "desc", cellRenderer: DateTimeCell },
+    { colId: "tracking", headerName: t("finTracking"), width: 170, sortable: false, cellRenderer: TrackingCell },
+    { colId: "note", headerName: t("finNote"), flex: 1, minWidth: 140, sortable: false, cellRenderer: NoteCell, tooltipField: "adminNote" },
+    { colId: "actions", headerName: "", width: 200, sortable: false, cellRenderer: ActionsCell },
+  ], [t]);
+  const context = useMemo<Ctx>(() => ({
+    isRTL, unit: t("walletUnit"), t, neverLabel: "—", busyId,
+    statusLabels: { pending: t("statusPending"), approved: t("statusApproved"), rejected: t("statusRejected") },
+    onApprove: setApproving,
+    onReject: (d) => { setRejectNote(""); setRejecting(d); },
+    onDelete: setDeleting,
+  }), [isRTL, t, busyId]);
 
-  const [codeSearch, setCodeSearch] = useState("");
-
-  const counts = useMemo(() => ({
-    all:      deposits.length,
-    pending:  deposits.filter((d) => d.status === "pending").length,
-    approved: deposits.filter((d) => d.status === "approved").length,
-    rejected: deposits.filter((d) => d.status === "rejected").length,
-  }), [deposits]);
-
-  const filtered = useMemo(() => {
-    let rows = filter === "all" ? deposits : deposits.filter((d) => d.status === filter);
-    const q = codeSearch.trim().toUpperCase();
-    if (q) rows = rows.filter((d) => d.interceptionCode?.toUpperCase().includes(q));
-    return rows;
-  }, [deposits, filter, codeSearch]);
-
-  const colDefs = useMemo<ColDef<Deposit>[]>(() => {
-    const cols: ColDef<Deposit>[] = [
-      { field: "user",         headerName: isRTL ? "کاربر" : "User",           flex: 1.5, minWidth: 160, sortable: false, filter: false, cellRenderer: UserCell, valueFormatter: () => "" },
-      { field: "amount",       headerName: isRTL ? "مبلغ (تومان)" : "Amount (IRT)", flex: 1, minWidth: 120, sortable: true, filter: false, cellRenderer: AmountCell },
-      { field: "card",         headerName: isRTL ? "کارت" : "Card",            flex: 1, minWidth: 150, sortable: false, filter: false, cellRenderer: CardCell, valueFormatter: () => "" },
-      { field: "status",       headerName: isRTL ? "وضعیت" : "Status",         width: 140, sortable: true, filter: false, cellRenderer: StatusCell },
-      { field: "receiptImage",     headerName: isRTL ? "رسید" : "Receipt",           width: 90,  sortable: false, filter: false, cellRenderer: ReceiptCell },
-      { field: "createdAt",        headerName: isRTL ? "تاریخ" : "Date",             width: 140, sortable: true,  filter: false, cellRenderer: DateCell },
-      { field: "interceptionCode", headerName: isRTL ? "کد پیگیری" : "Tracking Code", width: 180, sortable: false, filter: false, cellRenderer: InterceptionCodeCell },
-      { field: "adminNote",        headerName: isRTL ? "یادداشت ادمین" : "Admin Note", flex: 1, minWidth: 140, sortable: false, filter: false, cellRenderer: AdminNoteCell },
-      { headerName: "",        width: 130, sortable: false, filter: false, cellRenderer: ActionCell },
-    ];
-    return isRTL ? [...cols].reverse() : cols;
-  }, [isRTL]);
-
-  const tabs: { key: DepositFilter; label: string }[] = [
-    { key: "all",      label: isRTL ? "همه" : "All" },
-    { key: "pending",  label: t("statusPending") },
-    { key: "approved", label: t("statusApproved") },
-    { key: "rejected", label: t("statusRejected") },
-  ];
+  const subject = (d: Deposit | null) => d && <>{fmt(d.amount)} {t("walletUnit")} · {d.user?.name || d.user?.email}</>;
 
   return (
-    <div className="space-y-6" dir={isRTL ? "rtl" : "ltr"}>
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("adminFinanceTitle")}</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("adminFinanceDesc")}</p>
+    <div className="space-y-6">
+      <PageHeader title={t("adminFinanceTitle")} description={t("afDesc")} />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatTile icon={<Clock className="h-5 w-5" />} label={t("statusPending")} value={deposits ? fmt(count("pending")) : "…"} hint={deposits && <>{fmt(sum("pending"))} {t("walletUnit")} {t("afPendingSum")}</>} />
+        <StatTile icon={<BadgeCheck className="h-5 w-5" />} label={t("afApprovedSum")} value={deposits ? <>{fmt(sum("approved"))} <span className="text-sm font-medium text-gray-500">{t("walletUnit")}</span></> : "…"} hint={deposits && <>{fmt(count("approved"))} × {t("statusApproved")}</>} />
+        <StatTile icon={<Ban className="h-5 w-5" />} label={t("afRejectedCount")} value={deposits ? fmt(count("rejected")) : "…"} />
       </div>
 
-      {/* Deposits */}
-      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-        <div>
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">{t("adminFinanceTitle")}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t("adminFinanceDesc")}</p>
-        </div>
-
-        {/* Tracking code search */}
-        <div className="relative w-64">
-          <svg className="pointer-events-none absolute top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" style={{ [isRTL ? "right" : "left"]: "0.75rem" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z"/>
-          </svg>
-          <input
-            dir="ltr"
-            value={codeSearch}
-            onChange={(e) => setCodeSearch(e.target.value)}
-            placeholder={isRTL ? "جستجو با کد پیگیری…" : "Search by tracking code…"}
-            className={`w-full rounded-xl border border-gray-200 bg-gray-50 py-2 text-sm text-gray-800 outline-none focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500 dark:focus:bg-gray-800 transition-colors font-mono ${isRTL ? "pr-9 pl-4" : "pl-9 pr-4"}`}
+      <Panel bodyClassName="p-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+          <FilterPills<Filter>
+            value={filter}
+            onChange={setFilter}
+            items={[
+              { key: "pending", label: t("statusPending"), count: count("pending") },
+              { key: "approved", label: t("statusApproved"), count: count("approved") },
+              { key: "rejected", label: t("statusRejected"), count: count("rejected") },
+              { key: "all", label: t("filterAllShort"), count: count("all") },
+            ]}
           />
-        </div>
-
-        {/* Filter tabs */}
-        <div className="flex flex-wrap gap-2">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                filter === tab.key
-                  ? "bg-brand-500 text-white"
-                  : "border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-              }`}
-            >
-              {tab.label}
-              <span className={`ms-1.5 rounded-full px-1.5 py-0.5 text-xs ${
-                filter === tab.key ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-              }`}>
-                {counts[tab.key]}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* Grid */}
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          {loading ? (
-            <div className="p-10 text-center text-sm text-gray-400">{t("loading")}</div>
-          ) : filtered.length === 0 ? (
-            <div className="p-10 text-center text-sm text-gray-400">{t("noDeposits")}</div>
-          ) : (
-            <div className="ag-ticket-table" dir={isRTL ? "rtl" : "ltr"}>
-              <AgGridReact<Deposit>
-                rowData={filtered}
-                columnDefs={colDefs}
-                theme={theme === "dark" ? agDark : agLight}
-                domLayout="autoHeight"
-                rowHeight={60}
-                headerHeight={44}
-                getRowId={(p) => p.data.id}
-                context={gridContext}
-                suppressMovableColumns
-                suppressCellFocus
-                suppressRowClickSelection
-                suppressHorizontalScroll
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Reject modal */}
-      <Modal isOpen={!!rejectId} onClose={() => !rejecting && setRejectId(null)} className="max-w-md mx-4 w-full" showCloseButton={false}>
-        <div dir={isRTL ? "rtl" : "ltr"} className="p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/10">
-              <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-900 dark:text-white">{t("rejectDeposit")}</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("rejectDepositDesc")}</p>
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{t("adminNote")}</label>
-            <textarea
-              value={rejectNote}
-              onChange={(e) => setRejectNote(e.target.value)}
-              placeholder={t("adminNotePlaceholder")}
-              rows={3}
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-800 outline-none transition-colors focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:border-brand-500 dark:focus:bg-gray-800 resize-none"
-            />
-          </div>
-          <div className={`flex gap-3 ${isRTL ? "flex-row-reverse" : ""}`}>
-            <button
-              onClick={handleReject}
-              disabled={rejecting}
-              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-60 transition-colors"
-            >
-              {rejecting ? (
-                <><svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>{t("submitting")}</>
-              ) : t("reject")}
-            </button>
-            <button
-              onClick={() => !rejecting && setRejectId(null)}
-              disabled={rejecting}
-              className="rounded-xl border border-gray-200 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
-            >
-              {t("cancel")}
-            </button>
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden />
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("afSearch")} aria-label={t("afSearch")} className={cn(inputClass, "h-9 ps-9")} />
           </div>
         </div>
-      </Modal>
+        {deposits === null ? <div className="p-5"><SkeletonRows rows={5} /></div>
+          : failed ? <p className="p-5 text-sm text-error-600 dark:text-error-400">{t("ovLoadFailed")}</p>
+          : rows.length === 0 ? <EmptyState icon={<Receipt className="h-6 w-6" />} title={filter === "pending" ? t("aovQueueEmpty") : t("noDeposits")} />
+          : <DataGrid rows={rows} columns={columns} context={context} rowHeight={60} />}
+      </Panel>
+
+      <ConfirmDialog
+        open={!!approving}
+        onClose={() => setApproving(null)}
+        onConfirm={confirmApprove}
+        busy={!!approving && busyId === approving.id}
+        title={t("afApproveTitle")}
+        subject={subject(approving)}
+        warning={<>{t("afApproveWarn")}{approving?.payment && <><br />{t("afNodepassNote")}</>}</>}
+        confirmLabel={t("approve")}
+        cancelLabel={t("cancel")}
+      />
+
+      <Dialog open={!!rejecting} onClose={() => !busyId && setRejecting(null)} title={t("rejectDeposit")} description={subject(rejecting)}>
+        <form onSubmit={confirmReject} className="space-y-4">
+          <Field label={t("afRejectNote")} hint={t("rejectDepositDesc")} htmlFor="rej-note">
+            <textarea id="rej-note" dir="auto" rows={3} autoFocus value={rejectNote} onChange={(e) => setRejectNote(e.target.value)} placeholder={t("adminNotePlaceholder")} className={cn(inputClass, "h-auto py-3")} />
+          </Field>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setRejecting(null)} disabled={!!busyId} className={buttonClass("secondary")}>{t("cancel")}</button>
+            <button type="submit" disabled={!!busyId} className={buttonClass("danger")}>{t("reject")}</button>
+          </div>
+        </form>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={confirmDelete}
+        busy={!!deleting && busyId === deleting.id}
+        title={t("finDeleteTitle")}
+        subject={subject(deleting)}
+        confirmLabel={t("delete")}
+        cancelLabel={t("cancel")}
+      />
     </div>
   );
 }

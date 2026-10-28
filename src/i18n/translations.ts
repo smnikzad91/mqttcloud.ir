@@ -913,6 +913,42 @@ const translations = {
     aovBrokerActivity: "Broker activity",
     aovDay: "Day",
     aovCount: "Sign-ups",
+
+    // Admin users (redesign)
+    auDesc: "Accounts, plans and wallet balances.",
+    auSearch: "Search name, email or phone…",
+    auAllPlans: "All plans",
+    auAllRoles: "All roles",
+    auDetails: "User details",
+    auCredentials: "MQTT credentials",
+    auDevices: "Devices",
+    auDeposits: "Top-ups",
+    auTickets: "Tickets",
+    auNone: "None",
+    auSmsWarn: "Saving a plan change texts this user an SMS about it.",
+    auNoChanges: "Nothing changed.",
+    auDeleteWarn: "This deletes the account only. Their MQTT credentials, devices, top-ups and tickets are not removed automatically — clean those up from the MQTT page first if needed.",
+    auSelfDelete: "You can't delete your own account.",
+    auEnterpriseHint: "Enterprise limits apply only after both numbers are set.",
+    auOpenProfile: "Details",
+
+    // Admin MQTT (redesign)
+    amSearch: "Search user, username or client ID…",
+    amOwner: "Owner",
+    amOnlineNow: "online now",
+    amSuspendTitle: "Suspend this credential?",
+    amSuspendWarn: "Devices using it can't log in again until it's re-activated. Sessions already connected stay up until they disconnect.",
+
+    // Admin finance (redesign)
+    afDesc: "Wallet top-ups. Card-to-card payments through nodepass are confirmed automatically; approve manually only after checking the money arrived.",
+    afSearch: "Search user or tracking code…",
+    afApproveTitle: "Approve this top-up?",
+    afApproveWarn: "The wallet is credited immediately and the user is emailed. This can't be undone from here.",
+    afNodepassNote: "This payment goes through nodepass and is normally confirmed automatically when the transfer arrives.",
+    afPendingSum: "waiting",
+    afApprovedSum: "Approved total",
+    afRejectedCount: "Rejected",
+    afRejectNote: "Reason (shown to the user)",
   },
 
   fa: {
@@ -1829,6 +1865,42 @@ const translations = {
     aovBrokerActivity: "فعالیت بروکر",
     aovDay: "روز",
     aovCount: "ثبت‌نام",
+
+    // Admin users (redesign)
+    auDesc: "حساب‌ها، پلن‌ها و موجودی کیف پول کاربران.",
+    auSearch: "جستجوی نام، ایمیل یا موبایل…",
+    auAllPlans: "همه پلن‌ها",
+    auAllRoles: "همه نقش‌ها",
+    auDetails: "جزئیات کاربر",
+    auCredentials: "اکانت‌های MQTT",
+    auDevices: "دستگاه‌ها",
+    auDeposits: "شارژها",
+    auTickets: "تیکت‌ها",
+    auNone: "موردی نیست",
+    auSmsWarn: "با ذخیره‌ی تغییر پلن، پیامکی درباره آن برای کاربر ارسال می‌شود.",
+    auNoChanges: "تغییری ایجاد نشده است.",
+    auDeleteWarn: "فقط حساب کاربری حذف می‌شود. اکانت‌های MQTT، دستگاه‌ها، شارژها و تیکت‌های او خودکار حذف نمی‌شوند؛ در صورت نیاز ابتدا از صفحه MQTT پاک کنید.",
+    auSelfDelete: "نمی‌توانید حساب خودتان را حذف کنید.",
+    auEnterpriseHint: "سقف‌های پلن پیشرفته فقط پس از تعیین هر دو عدد اعمال می‌شوند.",
+    auOpenProfile: "جزئیات",
+
+    // Admin MQTT (redesign)
+    amSearch: "جستجوی کاربر، نام کاربری یا Client ID…",
+    amOwner: "مالک",
+    amOnlineNow: "آنلاین",
+    amSuspendTitle: "این اکانت مسدود شود؟",
+    amSuspendWarn: "دستگاه‌هایی که از آن استفاده می‌کنند تا فعال‌سازی دوباره نمی‌توانند وارد شوند. اتصال‌های برقرار تا قطع شدن باقی می‌مانند.",
+
+    // Admin finance (redesign)
+    afDesc: "شارژهای کیف پول. پرداخت‌های کارت‌به‌کارت از طریق nodepass خودکار تایید می‌شوند؛ تایید دستی را فقط پس از اطمینان از رسیدن وجه انجام دهید.",
+    afSearch: "جستجوی کاربر یا کد پیگیری…",
+    afApproveTitle: "این شارژ تایید شود؟",
+    afApproveWarn: "کیف پول بلافاصله شارژ می‌شود و برای کاربر ایمیل ارسال می‌شود. این کار از اینجا قابل بازگشت نیست.",
+    afNodepassNote: "این پرداخت از طریق nodepass انجام می‌شود و معمولاً پس از رسیدن وجه خودکار تایید می‌شود.",
+    afPendingSum: "در انتظار",
+    afApprovedSum: "مجموع تاییدشده",
+    afRejectedCount: "ردشده",
+    afRejectNote: "دلیل (به کاربر نمایش داده می‌شود)",
   },
 } as const;
 

@@ -365,3 +365,30 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, subject, warnin
     </Dialog>
   );
 }
+
+/** Side sheet on the end edge for detail views. Esc / backdrop closes it. */
+export function Drawer({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: React.ReactNode; children: React.ReactNode; footer?: React.ReactNode }) {
+  const t = useT();
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[99999]" role="dialog" aria-modal="true">
+      <div className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onClick={onClose} aria-hidden />
+      <aside className="absolute inset-y-0 end-0 flex w-full max-w-md flex-col border-s border-gray-200 bg-white shadow-theme-xl dark:border-gray-800 dark:bg-gray-950">
+        <header className="flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h2>
+          <button type="button" onClick={onClose} aria-label={t("cmdClose")} className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/5">✕</button>
+        </header>
+        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+        {footer && <footer className="flex justify-end gap-2 border-t border-gray-100 px-5 py-4 dark:border-gray-800">{footer}</footer>}
+      </aside>
+    </div>
+  );
+}

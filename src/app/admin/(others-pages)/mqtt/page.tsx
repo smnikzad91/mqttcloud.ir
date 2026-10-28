@@ -1,323 +1,186 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { AgGridReact } from "ag-grid-react";
-import { themeQuartz, type ColDef } from "ag-grid-community";
+import type { ColDef, ICellRendererParams } from "ag-grid-community";
+import { Search, Power, Trash2, KeyRound, Cpu, Activity } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
-import { useTheme } from "@/context/ThemeContext";
+import { getJson } from "@/lib/getJson";
+import DataGrid, { MonoCell, DateCell, DateTimeCell, StatusCell } from "@/components/dashboard/DataGrid";
+import { PageHeader, Panel, StatTile, EmptyState, SkeletonRows, FilterPills, ConfirmDialog, StatusBadge, inputClass, cn, useFormatNumber } from "@/components/dashboard/ui";
 
 type Owner = { name: string; email: string } | null;
-
-type Credential = {
-  id: string;
-  username: string;
-  isActive: boolean;
-  maxConnection: number;
-  createdAt: string;
-  user: Owner;
-};
-
-type Client = {
-  id: string;
-  clientName: string;
-  isOnline: boolean;
-  lastSeenAt: string | null;
-  createdAt: string;
-  username: string;
-  user: Owner;
-};
-
-type Activity = {
-  id: string;
-  clientName: string;
-  event: "connect" | "disconnect";
-  createdAt: string;
-  user: Owner;
-};
-
+type Credential = { id: string; username: string; isActive: boolean; maxConnection: number; createdAt: string; user: Owner };
+type Client = { id: string; clientName: string; username: string; isOnline: boolean; lastSeenAt: string | null; createdAt: string; user: Owner };
+type ActivityRow = { id: string; clientName: string; event: "connect" | "disconnect"; createdAt: string; user: Owner };
 type Tab = "credentials" | "clients" | "activity";
 
-// ── AG Grid Themes ─────────────────────────────────────────────────────────────
-const agLight = themeQuartz.withParams({
-  accentColor: "#465fff", backgroundColor: "#ffffff", foregroundColor: "#111827",
-  borderColor: "#e5e7eb", chromeBackgroundColor: "#f9fafb", headerTextColor: "#6b7280",
-  rowHoverColor: "#f9fafb", columnBorder: false, rowBorder: { color: "#f3f4f6" },
-  fontSize: 14, fontFamily: "inherit", rowVerticalPaddingScale: 1.3, headerFontSize: 12,
-});
-const agDark = themeQuartz.withParams({
-  accentColor: "#465fff", backgroundColor: "#111827", foregroundColor: "#f9fafb",
-  borderColor: "#374151", chromeBackgroundColor: "#111827", headerTextColor: "#9ca3af",
-  rowHoverColor: "rgba(255,255,255,0.02)", columnBorder: false, rowBorder: { color: "#1f2937" },
-  fontSize: 14, fontFamily: "inherit", rowVerticalPaddingScale: 1.3, headerFontSize: 12,
-});
-
-function UserCell({ value }: { value: Owner }) {
-  if (!value) return <span className="text-gray-400">—</span>;
-  return (
-    <div dir="ltr" className="flex flex-col justify-center leading-tight">
-      <span className="text-sm font-medium text-gray-800 dark:text-white">{value.name}</span>
-      <span className="text-xs text-gray-400">{value.email}</span>
-    </div>
-  );
-}
-
-function DateCell({ value, context }: { value: string | null; context: { isRTL: boolean } }) {
-  if (!value) return <span className="text-gray-400">—</span>;
-  const formatted = new Date(value).toLocaleDateString(context.isRTL ? "fa-IR" : "en-US", {
-    year: "numeric", month: "short", day: "numeric",
-  });
-  return <span dir="ltr">{formatted}</span>;
-}
-
-function UsernameCell({ value }: { value: string }) {
-  return <span dir="ltr" className="font-mono text-sm text-gray-800 dark:text-gray-200">{value}</span>;
-}
-
-function OnlineCell({ value, context }: { value: boolean; context: { onlineLabel: string; offlineLabel: string } }) {
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-      value ? "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-    }`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${value ? "bg-green-500" : "bg-gray-400"}`} />
-      {value ? context.onlineLabel : context.offlineLabel}
-    </span>
-  );
-}
-
-function EventCell({ value, context }: { value: "connect" | "disconnect"; context: { connectLabel: string; disconnectLabel: string } }) {
-  const connect = value === "connect";
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-      connect ? "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400" : "bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400"
-    }`}>
-      {connect ? context.connectLabel : context.disconnectLabel}
-    </span>
-  );
-}
-
-type CredActionCtx = {
-  suspendLabel: string;
-  unsuspendLabel: string;
-  deleteLabel: string;
+type Ctx = {
+  isRTL: boolean;
+  t: ReturnType<typeof useT>;
+  neverLabel: string;
+  statusLabels: Record<string, string>;
   onToggle: (c: Credential) => void;
-  onDelete: (id: string) => void;
+  onDelete: (c: Credential) => void;
 };
 
-function CredActionCell({ data, context }: { data: Credential; context: CredActionCtx }) {
+function OwnerCell({ value }: { value: Owner }) {
+  if (!value) return <span className="text-gray-400">—</span>;
   return (
-    <div className="flex items-center gap-1.5">
-      <button
-        onClick={() => context.onToggle(data)}
-        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-          data.isActive
-            ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-500/10 dark:text-yellow-400"
-            : "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-500/10 dark:text-green-400"
-        }`}
-      >
-        {data.isActive ? context.suspendLabel : context.unsuspendLabel}
-      </button>
-      <button
-        onClick={() => context.onDelete(data.id)}
-        className="rounded-lg bg-red-400 hover:bg-red-500 p-1.5 text-white transition-colors"
-        aria-label={context.deleteLabel}
-      >
-        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-      </button>
+    <div className="flex h-full flex-col justify-center leading-tight">
+      <span className="truncate text-sm text-gray-900 dark:text-white">{value.name || "—"}</span>
+      <span dir="ltr" className="truncate text-start text-xs text-gray-500 dark:text-gray-400">{value.email}</span>
     </div>
   );
 }
 
+function CredActions({ data, context }: ICellRendererParams<Credential> & { context: Ctx }) {
+  if (!data) return null;
+  const btn = "flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white";
+  const label = data.isActive ? context.t("suspend") : context.t("unsuspend");
+  return (
+    <div className="flex h-full items-center justify-end gap-1">
+      <button type="button" className={btn} onClick={() => context.onToggle(data)} title={label} aria-label={label}><Power className="h-4 w-4" /></button>
+      <button type="button" className={cn(btn, "hover:!bg-error-50 hover:!text-error-600 dark:hover:!bg-error-500/10")} onClick={() => context.onDelete(data)} title={context.t("delete")} aria-label={context.t("delete")}><Trash2 className="h-4 w-4" /></button>
+    </div>
+  );
+}
+
+const matchOwner = (o: Owner, q: string) => !!o && (o.name.toLowerCase().includes(q) || o.email.toLowerCase().includes(q));
+
 export default function AdminMqttPage() {
-  const t         = useT();
-  const { lang }  = useLanguage();
-  const isRTL     = lang === "fa";
-  const { theme } = useTheme();
+  const t = useT();
+  const { lang } = useLanguage();
+  const isRTL = lang === "fa";
+  const fmt = useFormatNumber();
 
-  const [tab, setTab]                 = useState<Tab>("credentials");
-  const [credentials, setCredentials] = useState<Credential[]>([]);
-  const [clients, setClients]         = useState<Client[]>([]);
-  const [activity, setActivity]       = useState<Activity[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [creds, setCreds] = useState<Credential[] | null>(null);
+  const [clients, setClients] = useState<Client[] | null>(null);
+  const [activity, setActivity] = useState<ActivityRow[] | null>(null);
+  const [tab, setTab] = useState<Tab>("credentials");
+  const [query, setQuery] = useState("");
 
-  const load = () => {
-    setLoading(true);
-    Promise.all([
-      fetch("/api/admin/mqtt/credentials").then((r) => r.json()),
-      fetch("/api/admin/mqtt/clients").then((r) => r.json()),
-      fetch("/api/admin/mqtt/activity").then((r) => r.json()),
-    ])
-      .then(([c, cl, a]) => {
-        setCredentials(Array.isArray(c) ? c : []);
-        setClients(Array.isArray(cl) ? cl : []);
-        setActivity(Array.isArray(a) ? a : []);
-      })
-      .finally(() => setLoading(false));
+  const load = useCallback(() => {
+    getJson<Credential[]>("/api/admin/mqtt/credentials").then((d) => setCreds(d ?? []));
+    getJson<Client[]>("/api/admin/mqtt/clients").then((d) => setClients(d ?? []));
+    getJson<ActivityRow[]>("/api/admin/mqtt/activity").then((d) => setActivity(d ?? []));
+  }, []);
+  useEffect(() => { queueMicrotask(load); }, [load]);
+
+  // Suspend asks first (it locks a customer's devices out); re-activating doesn't.
+  const [confirm, setConfirm] = useState<{ kind: "suspend" | "delete"; cred: Credential } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const setActive = useCallback(async (c: Credential, isActive: boolean) => {
+    const res = await fetch(`/api/admin/mqtt/credentials/${c.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { toast.error(data.error || t("saveError")); return false; }
+    toast.success(isActive ? t("mqttCredentialUnsuspended") : t("mqttCredentialSuspended"));
+    load();
+    return true;
+  }, [load, t]);
+  const onToggle = useCallback((c: Credential) => {
+    if (c.isActive) setConfirm({ kind: "suspend", cred: c });
+    else setActive(c, true);
+  }, [setActive]);
+  const onDelete = useCallback((c: Credential) => setConfirm({ kind: "delete", cred: c }), []);
+  const runConfirm = async () => {
+    if (!confirm) return;
+    setBusy(true);
+    if (confirm.kind === "suspend") {
+      if (await setActive(confirm.cred, false)) setConfirm(null);
+    } else {
+      const res = await fetch(`/api/admin/mqtt/credentials/${confirm.cred.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) { toast.success(t("mqttCredentialDeleted")); setConfirm(null); load(); }
+      else toast.error(data.error || t("saveError"));
+    }
+    setBusy(false);
   };
-  useEffect(() => { queueMicrotask(load); }, []);
 
-  const handleToggle = async (c: Credential) => {
-    const res = await fetch(`/api/admin/mqtt/credentials/${c.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isActive: !c.isActive }),
-    });
-    if (res.ok) { toast.success(c.isActive ? t("mqttCredentialSuspended") : t("mqttCredentialUnsuspended")); load(); }
-    else        { const d = await res.json(); toast.error(d.error || t("saveError")); }
-  };
+  const q = query.trim().toLowerCase();
+  const credRows = useMemo(() => (creds ?? []).filter((c) => !q || c.username.toLowerCase().includes(q) || matchOwner(c.user, q)), [creds, q]);
+  const clientRows = useMemo(() => (clients ?? []).filter((c) => !q || c.clientName.toLowerCase().includes(q) || c.username.toLowerCase().includes(q) || matchOwner(c.user, q)), [clients, q]);
+  const activityRows = useMemo(() => (activity ?? []).filter((a) => !q || a.clientName.toLowerCase().includes(q) || matchOwner(a.user, q)), [activity, q]);
 
-  const handleDelete = async (id: string) => {
-    const res  = await fetch(`/api/admin/mqtt/credentials/${id}`, { method: "DELETE" });
-    const data = await res.json();
-    if (res.ok) { toast.success(t("mqttCredentialDeleted")); load(); }
-    else        { toast.error(data.error || t("saveError")); }
-  };
+  const credCols = useMemo<ColDef<Credential>[]>(() => [
+    { field: "user", headerName: t("amOwner"), flex: 1.4, minWidth: 200, sortable: false, cellRenderer: OwnerCell },
+    { field: "username", headerName: t("mqttUsername"), flex: 1, minWidth: 150, cellRenderer: MonoCell },
+    { field: "isActive", headerName: t("finStatus"), width: 130, cellRenderer: StatusCell, valueGetter: (p) => (p.data?.isActive ? "active" : "suspended") },
+    { field: "maxConnection", headerName: t("mqttMaxConnection"), width: 130 },
+    { field: "createdAt", headerName: t("mqCreated"), width: 130, sort: "desc", cellRenderer: DateCell },
+    { colId: "actions", headerName: "", width: 100, sortable: false, cellRenderer: CredActions },
+  ], [t]);
+  const clientCols = useMemo<ColDef<Client>[]>(() => [
+    { field: "user", headerName: t("amOwner"), flex: 1.3, minWidth: 200, sortable: false, cellRenderer: OwnerCell },
+    { field: "clientName", headerName: t("mqttClientName"), flex: 1, minWidth: 150, cellRenderer: MonoCell },
+    { field: "username", headerName: t("mqttUsername"), flex: 1, minWidth: 130, cellRenderer: MonoCell },
+    { field: "isOnline", headerName: t("finStatus"), width: 120, cellRenderer: StatusCell, valueGetter: (p) => (p.data?.isOnline ? "online" : "offline"), sort: "desc" },
+    { field: "lastSeenAt", headerName: t("mqttLastSeen"), width: 180, cellRenderer: DateTimeCell },
+  ], [t]);
+  const activityCols = useMemo<ColDef<ActivityRow>[]>(() => [
+    { field: "user", headerName: t("amOwner"), flex: 1.3, minWidth: 200, sortable: false, cellRenderer: OwnerCell },
+    { field: "clientName", headerName: t("mqttClientName"), flex: 1, minWidth: 150, cellRenderer: MonoCell },
+    { field: "event", headerName: t("colEvent"), width: 140, cellRenderer: StatusCell },
+    { field: "createdAt", headerName: t("colTime"), width: 180, sort: "desc", cellRenderer: DateTimeCell },
+  ], [t]);
 
-  const credCols = useMemo<ColDef<Credential>[]>(() => {
-    const cols: ColDef<Credential>[] = [
-      { field: "user",          headerName: isRTL ? "کاربر" : "User",     flex: 1.4, minWidth: 160, sortable: false, filter: false, cellRenderer: UserCell, valueFormatter: () => "" },
-      { field: "username",      headerName: t("mqttUsername"),           flex: 1, minWidth: 140, sortable: true, filter: false, cellRenderer: UsernameCell },
-      { field: "isActive",      headerName: isRTL ? "وضعیت" : "Status",  width: 120, sortable: true, filter: false,
-        cellRenderer: ({ value }: { value: boolean }) => (
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${value ? "bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
-            {value ? t("mqttActive") : t("mqttSuspended")}
-          </span>
-        ) },
-      { field: "maxConnection", headerName: t("mqttMaxConnection"),       width: 130, sortable: true, filter: false },
-      { field: "createdAt",     headerName: isRTL ? "تاریخ" : "Date",     width: 130, sortable: true, filter: false, cellRenderer: DateCell },
-      { headerName: "",         width: 160, sortable: false, filter: false, cellRenderer: CredActionCell },
-    ];
-    return isRTL ? [...cols].reverse() : cols;
-  }, [isRTL, t]);
+  const context = useMemo<Ctx>(() => ({
+    isRTL, t, neverLabel: t("mqttNeverSeen"), onToggle, onDelete,
+    statusLabels: {
+      active: t("mqttActive"), suspended: t("mqttSuspended"), online: t("mqttOnline"), offline: t("mqttOffline"),
+      connect: t("eventConnect"), disconnect: t("eventDisconnect"),
+    },
+  }), [isRTL, t, onToggle, onDelete]);
 
-  const clientCols = useMemo<ColDef<Client>[]>(() => {
-    const cols: ColDef<Client>[] = [
-      { field: "user",        headerName: isRTL ? "کاربر" : "User",       flex: 1.3, minWidth: 160, sortable: false, filter: false, cellRenderer: UserCell, valueFormatter: () => "" },
-      { field: "clientName",  headerName: t("mqttClientName"),            flex: 1, minWidth: 140, sortable: true, filter: false, cellRenderer: UsernameCell },
-      { field: "username",    headerName: t("mqttUsername"),              flex: 1, minWidth: 120, sortable: true, filter: false, cellRenderer: UsernameCell },
-      { field: "isOnline",    headerName: isRTL ? "اتصال" : "Status",     width: 130, sortable: true, filter: false, cellRenderer: OnlineCell },
-      { field: "lastSeenAt",  headerName: t("mqttLastSeen"),              width: 140, sortable: true, filter: false, cellRenderer: DateCell },
-    ];
-    return isRTL ? [...cols].reverse() : cols;
-  }, [isRTL, t]);
-
-  const activityCols = useMemo<ColDef<Activity>[]>(() => {
-    const cols: ColDef<Activity>[] = [
-      { field: "user",        headerName: isRTL ? "کاربر" : "User",       flex: 1.3, minWidth: 160, sortable: false, filter: false, cellRenderer: UserCell, valueFormatter: () => "" },
-      { field: "clientName",  headerName: t("mqttClientName"),            flex: 1, minWidth: 140, sortable: true, filter: false, cellRenderer: UsernameCell },
-      { field: "event",       headerName: isRTL ? "رویداد" : "Event",     width: 130, sortable: true, filter: false, cellRenderer: EventCell },
-      { field: "createdAt",   headerName: isRTL ? "زمان" : "Time",        width: 160, sortable: true, filter: false, cellRenderer: DateCell },
-    ];
-    return isRTL ? [...cols].reverse() : cols;
-  }, [isRTL, t]);
-
-  const credContext = useMemo<CredActionCtx & { isRTL: boolean }>(() => ({
-    isRTL,
-    suspendLabel: t("suspend"), unsuspendLabel: t("unsuspend"), deleteLabel: t("delete"),
-    onToggle: handleToggle, onDelete: handleDelete,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [isRTL, t]);
-
-  const statusCtx = useMemo(() => ({ isRTL, onlineLabel: t("mqttOnline"), offlineLabel: t("mqttOffline") }), [isRTL, t]);
-  const eventCtx   = useMemo(() => ({ isRTL, connectLabel: t("eventConnect"), disconnectLabel: t("eventDisconnect") }), [isRTL, t]);
-
-  const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: "credentials", label: t("mqttTabCredentials"), count: credentials.length },
-    { key: "clients",     label: t("mqttTabClients"),     count: clients.length },
-    { key: "activity",    label: t("mqttTabActivity"),    count: activity.length },
-  ];
+  const online = (clients ?? []).filter((c) => c.isOnline).length;
+  const suspended = (creds ?? []).filter((c) => !c.isActive).length;
+  const loading = tab === "credentials" ? creds === null : tab === "clients" ? clients === null : activity === null;
 
   return (
-    <div className="space-y-6" dir={isRTL ? "rtl" : "ltr"}>
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("adminMqttTitle")}</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("adminMqttDesc")}</p>
+    <div className="space-y-6">
+      <PageHeader title={t("adminMqttTitle")} description={t("adminMqttDesc")} />
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatTile icon={<KeyRound className="h-5 w-5" />} label={t("mqttTabCredentials")} value={creds ? fmt(creds.length) : "…"} hint={creds && suspended > 0 && <>{fmt(suspended)} {t("mqttSuspended")}</>} />
+        <StatTile icon={<Cpu className="h-5 w-5" />} label={t("mqttTabClients")} value={clients ? <span dir="ltr">{fmt(online)} <span className="text-base font-medium text-gray-400">/ {fmt(clients.length)}</span></span> : "…"} hint={clients && <StatusBadge status="online" label={`${fmt(online)} ${t("amOnlineNow")}`} pulse={online > 0} />} />
+        <StatTile icon={<Activity className="h-5 w-5" />} label={t("mqttTabActivity")} value={activity ? fmt(activity.length) : "…"} />
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {tabs.map((tb) => (
-          <button
-            key={tb.key}
-            onClick={() => setTab(tb.key)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              tab === tb.key
-                ? "bg-brand-500 text-white"
-                : "border border-gray-200 text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-            }`}
-          >
-            {tb.label}
-            <span className={`ms-1.5 rounded-full px-1.5 py-0.5 text-xs ${
-              tab === tb.key ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-            }`}>
-              {tb.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {loading ? (
-          <div className="p-10 text-center text-sm text-gray-400">{t("loading")}</div>
-        ) : (
-          <div className="ag-ticket-table" dir={isRTL ? "rtl" : "ltr"}>
-            {tab === "credentials" && (
-              credentials.length === 0
-                ? <div className="p-10 text-center text-sm text-gray-400">{t("noMqttCredentials")}</div>
-                : <AgGridReact<Credential>
-                    rowData={credentials}
-                    columnDefs={credCols}
-                    theme={theme === "dark" ? agDark : agLight}
-                    domLayout="autoHeight"
-                    rowHeight={56}
-                    headerHeight={44}
-                    getRowId={(p) => p.data.id}
-                    context={credContext}
-                    suppressMovableColumns
-                    suppressCellFocus
-                    suppressRowClickSelection
-                    suppressHorizontalScroll
-                  />
-            )}
-            {tab === "clients" && (
-              clients.length === 0
-                ? <div className="p-10 text-center text-sm text-gray-400">{t("noMqttClients")}</div>
-                : <AgGridReact<Client>
-                    rowData={clients}
-                    columnDefs={clientCols}
-                    theme={theme === "dark" ? agDark : agLight}
-                    domLayout="autoHeight"
-                    rowHeight={56}
-                    headerHeight={44}
-                    getRowId={(p) => p.data.id}
-                    context={statusCtx}
-                    suppressMovableColumns
-                    suppressCellFocus
-                    suppressRowClickSelection
-                    suppressHorizontalScroll
-                  />
-            )}
-            {tab === "activity" && (
-              activity.length === 0
-                ? <div className="p-10 text-center text-sm text-gray-400">{t("noMqttActivity")}</div>
-                : <AgGridReact<Activity>
-                    rowData={activity}
-                    columnDefs={activityCols}
-                    theme={theme === "dark" ? agDark : agLight}
-                    domLayout="autoHeight"
-                    rowHeight={52}
-                    headerHeight={44}
-                    getRowId={(p) => p.data.id}
-                    context={eventCtx}
-                    suppressMovableColumns
-                    suppressCellFocus
-                    suppressRowClickSelection
-                    suppressHorizontalScroll
-                  />
-            )}
+      <Panel bodyClassName="p-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+          <FilterPills<Tab>
+            value={tab}
+            onChange={setTab}
+            items={[
+              { key: "credentials", label: t("mqttTabCredentials"), count: credRows.length },
+              { key: "clients", label: t("mqttTabClients"), count: clientRows.length },
+              { key: "activity", label: t("mqttTabActivity"), count: activityRows.length },
+            ]}
+          />
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden />
+            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("amSearch")} aria-label={t("amSearch")} className={cn(inputClass, "h-9 ps-9")} />
           </div>
-        )}
-      </div>
+        </div>
+
+        {loading ? <div className="p-5"><SkeletonRows rows={6} /></div>
+          : tab === "credentials" ? (credRows.length ? <DataGrid rows={credRows} columns={credCols} context={context} rowHeight={60} /> : <EmptyState icon={<KeyRound className="h-6 w-6" />} title={t("noMqttCredentials")} />)
+          : tab === "clients" ? (clientRows.length ? <DataGrid rows={clientRows} columns={clientCols} context={context} rowHeight={60} /> : <EmptyState icon={<Cpu className="h-6 w-6" />} title={t("noMqttClients")} />)
+          : (activityRows.length ? <DataGrid rows={activityRows} columns={activityCols} context={context} rowHeight={60} /> : <EmptyState icon={<Activity className="h-6 w-6" />} title={t("noMqttActivity")} />)}
+      </Panel>
+
+      <ConfirmDialog
+        open={!!confirm}
+        onClose={() => setConfirm(null)}
+        onConfirm={runConfirm}
+        busy={busy}
+        title={confirm?.kind === "suspend" ? t("amSuspendTitle") : t("mqDeleteCredTitle")}
+        subject={confirm && <><span dir="ltr" className="font-mono-signal">{confirm.cred.username}</span>{confirm.cred.user && <span className="font-normal text-gray-500"> · {confirm.cred.user.name || confirm.cred.user.email}</span>}</>}
+        warning={confirm?.kind === "suspend" ? t("amSuspendWarn") : t("mqDeleteCredWarn")}
+        confirmLabel={confirm?.kind === "suspend" ? t("suspend") : t("delete")}
+        cancelLabel={t("cancel")}
+      />
     </div>
   );
 }
