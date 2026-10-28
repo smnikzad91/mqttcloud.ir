@@ -1,7 +1,8 @@
 "use client";
 
-import UserSidebar from "@/components/user-dashboard/UserSidebar";
-import UserHeader from "@/components/user-dashboard/UserHeader";
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { useUserNav } from "@/components/dashboard/nav";
 import MqttToastBridge from "@/components/user-dashboard/MqttToastBridge";
 import PhoneVerifyBanner from "@/components/user-dashboard/PhoneVerifyBanner";
 import { UserSidebarProvider, useUserSidebar } from "@/context/UserSidebarContext";
@@ -11,26 +12,25 @@ import { useLanguage } from "@/context/LanguageContext";
 import React from "react";
 
 function UserDashboardShell({ children }: { children: React.ReactNode }) {
-  const { isExpanded, isHovered, isMobileOpen } = useUserSidebar();
+  const sidebar = useUserSidebar();
+  const sections = useUserNav();
   const { lang } = useLanguage();
-  const isRTL = lang === "fa";
-
-  const mainContentMargin = isMobileOpen
-    ? ""
-    : isExpanded || isHovered
-    ? isRTL ? "lg:mr-[280px]" : "lg:ml-[280px]"
-    : isRTL ? "lg:mr-[72px]" : "lg:ml-[72px]";
+  const wide = sidebar.isExpanded || sidebar.isHovered;
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} className="min-h-screen xl:flex bg-gradient-to-br from-white to-brand-50 dark:from-[#0d1117] dark:to-[#1a2744]">
+    <div dir={lang === "fa" ? "rtl" : "ltr"} className="min-h-screen bg-gray-50 dark:bg-[#070a12]">
       <MqttToastBridge />
-      <UserSidebar />
-      <div className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}>
-        <UserHeader />
+      <DashboardSidebar sections={sections} homeHref="/dashboard" sidebar={sidebar} />
+      <div className={`flex min-w-0 flex-col transition-[margin] duration-300 ease-in-out ${wide ? "lg:ms-[280px]" : "lg:ms-[72px]"}`}>
+        <DashboardHeader
+          sections={sections}
+          isMobileOpen={sidebar.isMobileOpen}
+          toggleSidebar={sidebar.toggleSidebar}
+          toggleMobileSidebar={sidebar.toggleMobileSidebar}
+          showWallet
+        />
         <PhoneVerifyBanner />
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-screen-2xl px-6 py-8">{children}</div>
-        </main>
+        <main className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-6 sm:px-6 lg:py-8">{children}</main>
       </div>
     </div>
   );

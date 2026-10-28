@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { ShieldAlert } from "lucide-react";
 import { useWebOtp } from "@/hooks/useWebOtp";
+import { useT } from "@/i18n/useT";
 
 const RESEND_COOLDOWN_SEC = 60;
 
@@ -13,6 +15,7 @@ const RESEND_COOLDOWN_SEC = 60;
 // reappears next page load until actually verified, same as the profile
 // fetch it's driven by.
 export default function PhoneVerifyBanner() {
+  const t = useT();
   const [status, setStatus] = useState<"loading" | "hidden" | "prompt" | "sent">("loading");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
@@ -48,7 +51,7 @@ export default function PhoneVerifyBanner() {
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      toast.error(data.error || "ارسال کد ناموفق بود");
+      toast.error(data.error || t("pvSendFailed"));
       return;
     }
     if (data.alreadyVerified) {
@@ -73,42 +76,42 @@ export default function PhoneVerifyBanner() {
     const data = await res.json();
     setLoading(false);
     if (!res.ok) {
-      setError(data.error || "کد وارد شده صحیح نیست");
+      setError(data.error || t("pvWrongCode"));
       return;
     }
-    toast.success("شماره موبایل شما با موفقیت تایید شد.");
+    toast.success(t("pvVerified"));
     setStatus("hidden");
   };
 
   if (status === "loading" || status === "hidden") return null;
 
   return (
-    <div className="border-b border-warning-200 bg-warning-50 px-6 py-3 dark:border-warning-500/20 dark:bg-warning-500/10">
-      <div className="mx-auto flex max-w-screen-2xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="px-4 pt-4 sm:px-6">
+      <div className="mx-auto flex max-w-screen-2xl flex-col gap-3 rounded-2xl border border-warning-200 bg-warning-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-warning-500/25 dark:bg-warning-500/10">
         {status === "prompt" ? (
           <>
-            <div className="flex items-center gap-2 text-sm text-warning-700 dark:text-warning-400">
-              <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
+            <div className="flex items-center gap-2.5 text-sm text-warning-800 dark:text-warning-300">
+              <ShieldAlert className="h-5 w-5 shrink-0" aria-hidden />
               <span>
-                شماره موبایل <span dir="ltr" className="font-medium">{phone}</span> شما تایید نشده است.
+                {t("pvUnverified")} <span dir="ltr" className="font-mono-signal font-semibold">{phone}</span>
               </span>
             </div>
             <button
+              type="button"
               onClick={requestCode}
               disabled={loading}
-              className="shrink-0 rounded-lg bg-warning-500 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-warning-600 disabled:opacity-60"
+              className="shrink-0 rounded-xl bg-warning-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-warning-600 disabled:opacity-60"
             >
-              {loading ? "در حال ارسال..." : "ارسال کد تایید"}
+              {loading ? t("pvSending") : t("pvSendCode")}
             </button>
           </>
         ) : (
-          <form onSubmit={handleVerify} className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
-            <span className="text-sm text-warning-700 dark:text-warning-400">
-              کد ارسال شده به <span dir="ltr" className="font-medium">{phone}</span> را وارد کنید:
+          <form onSubmit={handleVerify} className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span className="flex items-center gap-2.5 text-sm text-warning-800 dark:text-warning-300">
+              <ShieldAlert className="h-5 w-5 shrink-0" aria-hidden />
+              <span>{t("pvEnterCode")} <span dir="ltr" className="font-mono-signal font-semibold">{phone}</span></span>
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 ref={codeRef}
                 type="text"
@@ -117,27 +120,28 @@ export default function PhoneVerifyBanner() {
                 dir="ltr"
                 maxLength={6}
                 placeholder="------"
+                aria-label={t("pvVerify")}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="h-9 w-32 rounded-lg border border-warning-300 bg-white px-3 text-center text-sm tracking-[0.3em] text-gray-800 outline-none focus:border-warning-500 dark:border-warning-500/30 dark:bg-gray-900 dark:text-white"
+                className="h-10 w-36 rounded-xl border border-warning-300 bg-white px-3 text-center font-mono-signal text-base tracking-[0.4em] text-gray-800 outline-none focus:border-warning-500 focus:ring-3 focus:ring-warning-500/15 dark:border-warning-500/30 dark:bg-gray-900 dark:text-white"
               />
               <button
                 type="submit"
                 disabled={loading || code.length !== 6}
-                className="rounded-lg bg-warning-500 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-warning-600 disabled:opacity-60"
+                className="h-10 rounded-xl bg-warning-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-warning-600 disabled:opacity-60"
               >
-                {loading ? "..." : "تایید"}
+                {loading ? "…" : t("pvVerify")}
               </button>
               <button
                 type="button"
                 onClick={requestCode}
                 disabled={cooldown > 0 || loading}
-                className="text-sm font-medium text-warning-700 hover:underline disabled:text-gray-400 disabled:no-underline dark:text-warning-400"
+                className="px-1 text-sm font-medium text-warning-700 hover:underline disabled:text-gray-400 disabled:no-underline dark:text-warning-400"
               >
-                {cooldown > 0 ? `ارسال مجدد (${cooldown})` : "ارسال مجدد"}
+                {t("pvResend")}{cooldown > 0 && <span dir="ltr" className="ms-1 font-mono-signal">({cooldown})</span>}
               </button>
             </div>
-            {error && <span className="text-sm text-error-600 dark:text-error-400">{error}</span>}
+            {error && <span role="alert" className="text-sm text-error-600 dark:text-error-400">{error}</span>}
           </form>
         )}
       </div>

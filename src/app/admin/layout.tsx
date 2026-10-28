@@ -1,34 +1,29 @@
 "use client";
 
+import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { useAdminNav } from "@/components/dashboard/nav";
 import { useSidebar } from "@/context/SidebarContext";
-import AppHeader from "@/layout/AppHeader";
-import AppSidebar from "@/layout/AppSidebar";
-import Backdrop from "@/layout/Backdrop";
-import React from "react";
 import { useLanguage } from "@/context/LanguageContext";
+import React from "react";
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const sidebar = useSidebar();
+  const sections = useAdminNav();
   const { lang } = useLanguage();
-  const isRTL = lang === "fa";
-
-  const mainContentMargin = isMobileOpen
-    ? ""
-    : isExpanded || isHovered
-    ? isRTL ? "lg:mr-[280px]" : "lg:ml-[280px]"
-    : isRTL ? "lg:mr-[72px]" : "lg:ml-[72px]";
+  const wide = sidebar.isExpanded || sidebar.isHovered;
 
   return (
-    <div dir={isRTL ? "rtl" : "ltr"} className="min-h-screen xl:flex">
-      <AppSidebar />
-      <Backdrop />
-      <div className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}>
-        <AppHeader />
-        <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">{children}</div>
+    <div dir={lang === "fa" ? "rtl" : "ltr"} className="min-h-screen bg-gray-50 dark:bg-[#070a12]">
+      <DashboardSidebar sections={sections} homeHref="/admin" sidebar={sidebar} />
+      <div className={`flex min-w-0 flex-col transition-[margin] duration-300 ease-in-out ${wide ? "lg:ms-[280px]" : "lg:ms-[72px]"}`}>
+        <DashboardHeader
+          sections={sections}
+          isMobileOpen={sidebar.isMobileOpen}
+          toggleSidebar={sidebar.toggleSidebar}
+          toggleMobileSidebar={sidebar.toggleMobileSidebar}
+        />
+        <main className="mx-auto w-full max-w-screen-2xl flex-1 px-4 py-6 sm:px-6 lg:py-8">{children}</main>
       </div>
     </div>
   );

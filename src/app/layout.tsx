@@ -64,8 +64,8 @@ export default function RootLayout({
           <LanguageProvider>
             <ThemeProvider>
               <SidebarProvider>{children}</SidebarProvider>
+              <ToastProvider />
             </ThemeProvider>
-            <ToastProvider />
           </LanguageProvider>
         </SessionWrapper>
       </body>
