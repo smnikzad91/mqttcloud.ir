@@ -893,6 +893,26 @@ const translations = {
     pwRules: "At least 8 characters. Mixing upper/lower case, numbers and symbols makes it stronger.",
     delUnavailable: "Self-service account deletion isn't available yet. To delete your account, open a support ticket and we'll take care of it.",
     delContact: "Open a ticket",
+
+    // Admin overview (redesign)
+    aovTitle: "Operations overview",
+    aovDesc: "What needs attention across users, billing, support and the broker.",
+    aovUsers: "Users",
+    aovNewThisMonth: "new this month",
+    aovPendingDeposits: "Pending top-ups",
+    aovOpenTickets: "Tickets awaiting reply",
+    aovNewMessages: "New contact messages",
+    aovDevicesOnline: "Devices online",
+    aovSignups: "Sign-ups, last 14 days",
+    aovSignupsTotal: "total",
+    aovPlans: "Users by plan",
+    aovDepositQueue: "Top-up queue",
+    aovTicketQueue: "Tickets awaiting reply",
+    aovQueueEmpty: "Nothing waiting.",
+    aovReview: "Review",
+    aovBrokerActivity: "Broker activity",
+    aovDay: "Day",
+    aovCount: "Sign-ups",
   },
 
   fa: {
@@ -1789,6 +1809,26 @@ const translations = {
     pwRules: "حداقل ۸ کاراکتر. ترکیب حروف بزرگ و کوچک، عدد و نماد رمز را قوی‌تر می‌کند.",
     delUnavailable: "حذف حساب به‌صورت خودکار هنوز فعال نیست. برای حذف حساب یک تیکت پشتیبانی ثبت کنید تا انجام دهیم.",
     delContact: "ثبت تیکت",
+
+    // Admin overview (redesign)
+    aovTitle: "مرکز عملیات",
+    aovDesc: "آنچه در کاربران، امور مالی، پشتیبانی و بروکر نیاز به رسیدگی دارد.",
+    aovUsers: "کاربران",
+    aovNewThisMonth: "جدید در این ماه",
+    aovPendingDeposits: "شارژهای در انتظار",
+    aovOpenTickets: "تیکت‌های منتظر پاسخ",
+    aovNewMessages: "پیام‌های تماس جدید",
+    aovDevicesOnline: "دستگاه‌های آنلاین",
+    aovSignups: "ثبت‌نام‌ها، ۱۴ روز اخیر",
+    aovSignupsTotal: "مجموع",
+    aovPlans: "کاربران بر اساس پلن",
+    aovDepositQueue: "صف شارژها",
+    aovTicketQueue: "تیکت‌های منتظر پاسخ",
+    aovQueueEmpty: "موردی در انتظار نیست.",
+    aovReview: "بررسی",
+    aovBrokerActivity: "فعالیت بروکر",
+    aovDay: "روز",
+    aovCount: "ثبت‌نام",
   },
 } as const;
 
