@@ -7,12 +7,14 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Check, Copy } from "lucide-react";
+import { twMerge } from "tailwind-merge";
 import { Modal } from "@/components/ui/modal";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
 
+/** Joins class names and lets later Tailwind utilities override earlier ones (`p-5` + `p-0` → `p-0`). */
 export function cn(...parts: (string | false | null | undefined)[]) {
-  return parts.filter(Boolean).join(" ");
+  return twMerge(parts.filter(Boolean).join(" "));
 }
 
 /** Localised number: Persian digits in FA, plain Latin digits in EN. */

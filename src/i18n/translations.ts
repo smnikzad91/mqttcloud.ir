@@ -972,6 +972,55 @@ const translations = {
     socialDesc: "Links shown in the public site's footer and contact page.",
     faqDeleteTitle: "Delete this FAQ?",
     annDeleteTitle: "Delete this announcement?",
+
+    // Admin legal & SEO (redesign)
+    lgDesc: "Privacy policy and terms of service pages.",
+    lgWrite: "Write",
+    lgPreview: "Preview",
+    lgUnsaved: "Unsaved changes",
+    lgViewOnSite: "View on site",
+    lgParagraphHint: "Separate paragraphs with a blank line.",
+    lgWords: "words",
+    lgLeaveConfirm: "You have unsaved changes. Switch anyway?",
+    seoGooglePreview: "Search result preview",
+    seoChars: "characters",
+    seoTitleTip: "Aim for 50–60 characters.",
+    seoDescTip: "Aim for 120–160 characters.",
+    removeLabel: "Remove",
+
+    // Admin blog/news lists (redesign)
+    clSearch: "Search titles…",
+    clAllCategories: "All categories",
+    clFeatured: "Featured",
+    clPublishTitle: "Publish this?",
+    clPublishWarn: "It goes live on the site and is posted to the Telegram channel.",
+    clUnpublish: "Unpublish",
+    clPublish: "Publish",
+    clTelegramTitle: "Send to Telegram again?",
+    clTelegramWarn: "This posts it to the public Telegram channel again, even if it was already sent.",
+    clSeedHint: "Imports posts from the code that aren't in the database yet. Existing posts are left as they are.",
+    blogDesc: "Articles on the public blog.",
+    newsDesc: "Product news and updates.",
+
+    // Admin blog/news categories (redesign)
+    txBlogDesc: "Group blog posts by topic. Renaming a category updates its posts too.",
+    txNewsDesc: "Group news items by topic.",
+    txSeedBlog: "Import categories from posts",
+    txInUse: "in use",
+
+    // Blog/news editors (redesign)
+    edSlugHint: "Generated from the title — edit if needed. Use latin letters, digits and dashes.",
+    edFeaturedHint: "Only one item is featured at a time; this replaces the current one.",
+    edPublishHint: "Publishing posts it to the Telegram channel.",
+    edDetails: "Details",
+    edContent: "Content",
+    edBack: "Back to list",
+    edCoverHint: "Shown on cards and in the Telegram post.",
+    edRemoveImage: "Remove image",
+    edUpload: "Upload image",
+    edReadTimeHint: "e.g. 5 min",
+    edCustomCategory: "Not in the list? Type a new one.",
+    edNoSections: "Add at least one section with body text.",
   },
 
   fa: {
@@ -1947,6 +1996,55 @@ const translations = {
     socialDesc: "لینک‌هایی که در فوتر و صفحه تماس سایت نمایش داده می‌شوند.",
     faqDeleteTitle: "این سوال حذف شود؟",
     annDeleteTitle: "این اعلان حذف شود؟",
+
+    // Admin legal & SEO (redesign)
+    lgDesc: "صفحات حریم خصوصی و شرایط استفاده.",
+    lgWrite: "نوشتن",
+    lgPreview: "پیش‌نمایش",
+    lgUnsaved: "تغییرات ذخیره‌نشده",
+    lgViewOnSite: "مشاهده در سایت",
+    lgParagraphHint: "پاراگراف‌ها را با یک خط خالی از هم جدا کنید.",
+    lgWords: "کلمه",
+    lgLeaveConfirm: "تغییرات ذخیره نشده‌اند. با این حال جابه‌جا شوید؟",
+    seoGooglePreview: "پیش‌نمایش نتیجه جستجو",
+    seoChars: "کاراکتر",
+    seoTitleTip: "بهتر است ۵۰ تا ۶۰ کاراکتر باشد.",
+    seoDescTip: "بهتر است ۱۲۰ تا ۱۶۰ کاراکتر باشد.",
+    removeLabel: "حذف",
+
+    // Admin blog/news lists (redesign)
+    clSearch: "جستجوی عنوان…",
+    clAllCategories: "همه دسته‌ها",
+    clFeatured: "ویژه",
+    clPublishTitle: "منتشر شود؟",
+    clPublishWarn: "در سایت منتشر و در کانال تلگرام هم ارسال می‌شود.",
+    clUnpublish: "لغو انتشار",
+    clPublish: "انتشار",
+    clTelegramTitle: "دوباره به تلگرام ارسال شود؟",
+    clTelegramWarn: "حتی اگر قبلاً ارسال شده باشد، دوباره در کانال عمومی تلگرام منتشر می‌شود.",
+    clSeedHint: "مطالبی که در کد هستند ولی در دیتابیس نیستند وارد می‌شوند. مطالب موجود تغییری نمی‌کنند.",
+    blogDesc: "مقالات وبلاگ سایت.",
+    newsDesc: "اخبار و به‌روزرسانی‌های محصول.",
+
+    // Admin blog/news categories (redesign)
+    txBlogDesc: "دسته‌بندی موضوعی مقالات. با تغییر نام یک دسته، مقالات آن هم به‌روز می‌شوند.",
+    txNewsDesc: "دسته‌بندی موضوعی اخبار.",
+    txSeedBlog: "وارد کردن دسته‌ها از مقالات",
+    txInUse: "در حال استفاده",
+
+    // Blog/news editors (redesign)
+    edSlugHint: "از روی عنوان ساخته می‌شود؛ در صورت نیاز ویرایش کنید. فقط حروف لاتین، عدد و خط تیره.",
+    edFeaturedHint: "در هر زمان فقط یک مورد ویژه است؛ این مورد جایگزین قبلی می‌شود.",
+    edPublishHint: "انتشار، آن را در کانال تلگرام هم ارسال می‌کند.",
+    edDetails: "جزئیات",
+    edContent: "محتوا",
+    edBack: "بازگشت به فهرست",
+    edCoverHint: "روی کارت‌ها و در پست تلگرام نمایش داده می‌شود.",
+    edRemoveImage: "حذف تصویر",
+    edUpload: "آپلود تصویر",
+    edReadTimeHint: "مثلاً ۵ دقیقه",
+    edCustomCategory: "در فهرست نیست؟ نام جدید را تایپ کنید.",
+    edNoSections: "حداقل یک بخش با متن اضافه کنید.",
   },
 } as const;
 
