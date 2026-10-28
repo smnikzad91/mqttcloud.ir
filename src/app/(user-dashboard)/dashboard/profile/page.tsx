@@ -44,7 +44,8 @@ export default function ProfilePage() {
     setSaving(false);
     if (!res.ok) return toast.error(data.error || t("saveError"));
     toast.success(t("saved"));
-    setProfile((p) => (p ? { ...p, phone } : p));
+    // A changed number has to be verified again (the dashboard banner offers the OTP).
+    setProfile((p) => (p ? { ...p, phone, phoneVerified: phone !== p.phone ? false : p.phoneVerified } : p));
   };
 
   const onAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {

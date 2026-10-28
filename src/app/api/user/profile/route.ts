@@ -60,7 +60,12 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    await User.findByIdAndUpdate(session.user.id, { phone });
+    // A new number hasn't been proven to belong to this user, so it goes back
+    // to unverified (the dashboard banner then offers an OTP for it).
+    const current = await User.findById(session.user.id).select("phone").lean();
+    const update: Record<string, unknown> = { phone };
+    if (phone !== "" && phone !== (current?.phone ?? "")) update.phoneVerified = false;
+    await User.findByIdAndUpdate(session.user.id, { $set: update });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const isdup = (err as { code?: number }).code === 11000;

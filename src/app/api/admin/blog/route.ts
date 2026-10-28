@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { slug, category, title, excerpt, readTime, hashtags, sections, highlight, published } = body;
+  const { slug, category, title, excerpt, readTime, hashtags, sections, highlight, published, coverImage } = body;
 
   if (!slug || !category || !title || !excerpt || !readTime) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (highlight) await BlogPost.updateMany({}, { $set: { highlight: false } });
-  const post = await BlogPost.create({ slug, category, title, excerpt, readTime, hashtags: hashtags ?? [], sections: sections ?? [], highlight: highlight ?? false, published: published ?? true });
+  const post = await BlogPost.create({ slug, category, title, excerpt, readTime, coverImage: coverImage || undefined, hashtags: hashtags ?? [], sections: sections ?? [], highlight: highlight ?? false, published: published ?? true });
 
   if (post.published) {
     void notifyBlog({ slug: post.slug, title: post.title, category: String(post.category), excerpt: post.excerpt, hashtags: post.hashtags ?? [], coverImage: post.coverImage ?? undefined });

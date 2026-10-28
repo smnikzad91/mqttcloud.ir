@@ -30,7 +30,7 @@ export default function PhoneVerifyBanner() {
         .then((r) => r.json())
         .then((d) => {
           setPhone(d.phone ?? "");
-          setStatus(d.phoneVerified === false ? "prompt" : "hidden");
+          setStatus(d.phoneVerified === false && d.phone ? "prompt" : "hidden");
         })
         .catch(() => setStatus("hidden"));
     });

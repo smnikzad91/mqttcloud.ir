@@ -85,10 +85,6 @@ export default function BlogPostEditor({ id }: { id?: string }) {
     const res = await fetch(isNew ? "/api/admin/blog" : `/api/admin/blog/${id}`, { method: isNew ? "POST" : "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) { setSaving(false); return setError(data.error ?? t("saveError")); }
-    // POST /api/admin/blog doesn't persist coverImage, so set it with a follow-up PUT on the new post.
-    if (isNew && form.coverImage && data.id) {
-      await fetch(`/api/admin/blog/${data.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ coverImage: form.coverImage }) });
-    }
     toast.success(t("blogSaved"));
     setInitial(form);
     router.push("/admin/blog");

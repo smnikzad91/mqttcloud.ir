@@ -26,7 +26,8 @@ export async function PUT(req: NextRequest, { params }: Params) {
   await tag.save();
 
   if (oldName !== tag.name) {
-    await NewsItem.updateMany({ tag: oldName }, { $set: { tag: tag.name } });
+    // News items store their category in `category` (the schema has no `tag` field).
+    await NewsItem.updateMany({ category: oldName }, { $set: { category: tag.name } });
   }
 
   return NextResponse.json({ ok: true });

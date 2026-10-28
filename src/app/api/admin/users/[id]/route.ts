@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
+import MqttUser from "@/models/MqttUser";
+import MqttClient from "@/models/MqttClient";
+import MqttActivity from "@/models/MqttActivity";
+import MqttPayload from "@/models/MqttPayload";
+import Card from "@/models/Card";
 import { PLAN_SUBSCRIPTION_DAYS } from "@/lib/plans";
 import { sendPlanChangedSms, newClientSmsId } from "@/lib/sms";
 
@@ -23,7 +28,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const update: Record<string, unknown> = {};
   if (role !== undefined) update.role = role;
-  if (phone !== undefined) update.phone = phone;
+  if (phone !== undefined) {
+    update.phone = phone;
+    // Same rule as self-service: a different number needs its own OTP.
+    const current = await User.findById(id).select("phone").lean();
+    if (phone !== "" && phone !== (current?.phone ?? "")) update.phoneVerified = false;
+  }
   if (plan !== undefined) {
     update.plan = plan;
     // basic/starter behave as a normal 30-day subscription even when
@@ -59,7 +69,20 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
 
   await connectDB();
-  await User.findByIdAndDelete(id);
+  const user = await User.findByIdAndDelete(id);
+  if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Remove everything that lets the account keep using the broker: with its
+  // MqttUser rows gone, the broker can no longer authenticate its devices.
+  // (Sessions already connected stay up until they disconnect.) Deposits,
+  // tickets and plan purchases are kept as billing/support history.
+  await Promise.all([
+    MqttUser.deleteMany({ userId: id }),
+    MqttClient.deleteMany({ userId: id }),
+    MqttActivity.deleteMany({ userId: id }),
+    MqttPayload.deleteMany({ userId: id }),
+    Card.deleteMany({ userId: id }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

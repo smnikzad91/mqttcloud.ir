@@ -24,12 +24,21 @@ export async function PATCH(
 
   await connectDB();
 
-  const deposit = await Deposit.findById(id);
-  if (!deposit) return NextResponse.json({ error: "Deposit not found." }, { status: 404 });
-
-  deposit.status    = status;
-  deposit.adminNote = adminNote;
-  await deposit.save();
+  // Only a pending deposit can be decided, and the status flip is one atomic
+  // update guarded on "pending" — so a double-click, a retried request, or
+  // the nodepass webhook landing at the same moment can never credit the
+  // wallet twice.
+  const deposit = await Deposit.findOneAndUpdate(
+    { _id: id, status: "pending" },
+    { $set: { status, adminNote } },
+    { returnDocument: "after" }
+  );
+  if (!deposit) {
+    const exists = await Deposit.exists({ _id: id });
+    return exists
+      ? NextResponse.json({ error: "This deposit has already been processed." }, { status: 409 })
+      : NextResponse.json({ error: "Deposit not found." }, { status: 404 });
+  }
 
   const user = status === "approved"
     ? await User.findByIdAndUpdate(deposit.userId, { $inc: { walletBalance: deposit.amount } }, { new: true })
