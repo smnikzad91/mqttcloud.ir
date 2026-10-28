@@ -1,7 +1,7 @@
 "use client";
 
-// Single-series daily column chart (one hue, brand-500 — validated against
-// both chart surfaces). Columns ≤24px with a 4px rounded top, square at the
+// Single-series column chart, daily or hourly (one hue, brand-500 —
+// validated against both chart surfaces). Columns ≤24px with a 4px rounded top, square at the
 // baseline; hover/focus shows a tooltip; an sr-only table carries the data.
 
 import { useState } from "react";
@@ -9,12 +9,16 @@ import { useLanguage } from "@/context/LanguageContext";
 
 export type DayPoint = { date: Date; value: number };
 
-export default function DailyBars({ points, valueLabel, dayLabel, height = 140 }: { points: DayPoint[]; valueLabel: string; dayLabel: string; height?: number }) {
+export default function DailyBars({ points, valueLabel, dayLabel, height = 140, granularity = "day" }: { points: DayPoint[]; valueLabel: string; dayLabel: string; height?: number; granularity?: "day" | "hour" }) {
   const { lang } = useLanguage();
   const locale = lang === "fa" ? "fa-IR" : "en-US";
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(1, ...points.map((p) => p.value));
-  const day = (d: Date, opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" }) => d.toLocaleDateString(locale, opts);
+  // Axis/tooltip labels: dates for daily points, clock times for hourly ones.
+  const day = (d: Date, opts?: Intl.DateTimeFormatOptions) =>
+    granularity === "hour"
+      ? d.toLocaleTimeString(locale, opts ?? { hour: "2-digit", minute: "2-digit" })
+      : d.toLocaleDateString(locale, opts ?? { month: "short", day: "numeric" });
   const num = (n: number) => n.toLocaleString(locale);
 
   return (
@@ -44,7 +48,7 @@ export default function DailyBars({ points, valueLabel, dayLabel, height = 140 }
               />
               {hover === i && (
                 <span role="tooltip" className="pointer-events-none absolute bottom-full z-10 mb-1 whitespace-nowrap rounded-lg bg-gray-900 px-2.5 py-1.5 text-xs text-white shadow-theme-lg dark:bg-gray-800">
-                  <span className="block text-gray-300">{day(p.date, { weekday: "short", month: "short", day: "numeric" })}</span>
+                  <span className="block text-gray-300">{granularity === "hour" ? day(p.date) : day(p.date, { weekday: "short", month: "short", day: "numeric" })}</span>
                   <span className="font-semibold">{num(p.value)} {valueLabel}</span>
                 </span>
               )}
