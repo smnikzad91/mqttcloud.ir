@@ -35,10 +35,10 @@ export const gridLight = themeQuartz.withParams({
 
 export const gridDark = themeQuartz.withParams({
   ...base,
-  // Matches the dashboard's dark graphite scale (globals.css → .dark .dash-surface).
-  backgroundColor: "#1b1b1f", foregroundColor: "#f4f4f5", borderColor: "#2f2f35",
-  chromeBackgroundColor: "#1b1b1f", headerTextColor: "#a1a1aa", rowHoverColor: "rgba(255,255,255,0.03)",
-  rowBorder: { color: "#2f2f35" },
+  // Matches the dashboard's dark navy scale (globals.css → .dark .dash-surface).
+  backgroundColor: "#1a2540", foregroundColor: "#f4f6fb", borderColor: "#2a3a5c",
+  chromeBackgroundColor: "#1a2540", headerTextColor: "#a9b6d3", rowHoverColor: "rgba(255,255,255,0.03)",
+  rowBorder: { color: "#2a3a5c" },
 });
 
 type Props<T> = Omit<AgGridReactProps<T>, "theme" | "rowData" | "columnDefs"> & {

@@ -900,20 +900,21 @@ span.flatpickr-weekday,
 .dash-grid { border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; overflow: hidden; }
 
 /*
- * Dashboard surfaces. In dark mode the dashboards use a neutral graphite
- * scale instead of the site's navy-tinted grays (the public landing page
- * keeps those). Tailwind v4 utilities read --color-gray-* at runtime, so
- * redefining them on the dashboard wrapper re-themes every bg/border/text
- * gray inside it, modals and drawers included.
+ * Dashboard surfaces. In dark mode the dashboards use a mid-dark navy scale,
+ * lighter than the site's near-black navy (the public landing page keeps
+ * that). Tailwind v4 utilities read --color-gray-* at runtime, so redefining
+ * them on the dashboard wrapper re-themes every bg/border/text gray inside
+ * it, modals and drawers included. Secondary text (400/500) stays ≥5:1 on
+ * the panel color.
  */
 .dash-surface { --dash-bg: var(--color-gray-50); background-color: var(--dash-bg); }
 .dark .dash-surface {
-  --color-gray-400: #a1a1aa;
-  --color-gray-500: #8d8d96;
-  --color-gray-600: #63636b;
-  --color-gray-700: #46464d;
-  --color-gray-800: #2f2f35;
-  --color-gray-900: #202024;
-  --color-gray-950: #19191c;
-  --dash-bg: #141416;
+  --color-gray-400: #a9b6d3;
+  --color-gray-500: #8a9ac0;
+  --color-gray-600: #5b6d96;
+  --color-gray-700: #3d5078;
+  --color-gray-800: #2a3a5c;
+  --color-gray-900: #1b2742;
+  --color-gray-950: #17223a;
+  --dash-bg: #131c31;
 }
