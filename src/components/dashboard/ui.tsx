@@ -7,6 +7,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { Check, Copy } from "lucide-react";
+import { Modal } from "@/components/ui/modal";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -237,7 +238,7 @@ export function FilterPills<K extends string>({ items, value, onChange }: { item
 /** The standard surface every dashboard section sits on. */
 export function Panel({ title, description, actions, children, className, bodyClassName }: { title?: React.ReactNode; description?: React.ReactNode; actions?: React.ReactNode; children: React.ReactNode; className?: string; bodyClassName?: string }) {
   return (
-    <section className={cn("rounded-2xl border border-gray-200 bg-white shadow-theme-xs dark:border-gray-800 dark:bg-gray-900/60", className)}>
+    <section className={cn("min-w-0 rounded-2xl border border-gray-200 bg-white shadow-theme-xs dark:border-gray-800 dark:bg-gray-900/60", className)}>
       {(title || actions) && (
         <header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
           <div className="min-w-0">
@@ -307,5 +308,60 @@ export function buttonClass(variant: keyof typeof BTN = "primary", size: "sm" | 
     "inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed",
     size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2.5 text-sm",
     BTN[variant],
+  );
+}
+
+// ── Forms & dialogs ─────────────────────────────────────────────────────────
+
+export const inputClass =
+  "h-11 w-full rounded-xl border border-gray-300 bg-white px-3.5 text-sm text-gray-900 shadow-theme-xs outline-none transition placeholder:text-gray-400 focus:border-brand-400 focus:ring-3 focus:ring-brand-500/15 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-brand-600";
+
+export function Field({ label, hint, error, children, htmlFor }: { label: React.ReactNode; hint?: React.ReactNode; error?: React.ReactNode; children: React.ReactNode; htmlFor?: string }) {
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
+      {children}
+      {error
+        ? <p role="alert" className="text-xs text-error-600 dark:text-error-400">{error}</p>
+        : hint && <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>}
+    </div>
+  );
+}
+
+/** Centered dialog with Esc / backdrop close (via ui/modal), a title, body and a footer row. */
+export function Dialog({ open, onClose, title, description, children, footer, size = "md" }: { open: boolean; onClose: () => void; title: React.ReactNode; description?: React.ReactNode; children?: React.ReactNode; footer?: React.ReactNode; size?: "md" | "lg" }) {
+  return (
+    <Modal isOpen={open} onClose={onClose} showCloseButton={false} className={cn("mx-4 !rounded-2xl border border-gray-200 dark:border-gray-800", size === "lg" ? "max-w-2xl" : "max-w-md")}>
+      <div role="dialog" aria-modal="true" className="p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
+        {description && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>}
+        {children && <div className="mt-5 space-y-4">{children}</div>}
+        {footer && <div className="mt-6 flex flex-wrap justify-end gap-2">{footer}</div>}
+      </div>
+    </Modal>
+  );
+}
+
+/** Destructive confirmation — replaces both window.confirm() and the old DeleteConfirmModal styling. */
+export function ConfirmDialog({ open, onClose, onConfirm, title, subject, warning, confirmLabel, cancelLabel, busy }: { open: boolean; onClose: () => void; onConfirm: () => void; title: React.ReactNode; subject?: React.ReactNode; warning?: React.ReactNode; confirmLabel: React.ReactNode; cancelLabel: React.ReactNode; busy?: boolean }) {
+  return (
+    <Dialog
+      open={open}
+      onClose={() => !busy && onClose()}
+      title={title}
+      footer={
+        <>
+          <button type="button" onClick={onClose} disabled={busy} className={buttonClass("secondary")}>{cancelLabel}</button>
+          <button type="button" onClick={onConfirm} disabled={busy} className={buttonClass("danger")}>{busy ? "…" : confirmLabel}</button>
+        </>
+      }
+    >
+      {(subject || warning) && (
+        <div className="space-y-2 rounded-xl border border-error-200 bg-error-50/60 p-3.5 text-sm dark:border-error-500/20 dark:bg-error-500/5">
+          {subject && <p dir="auto" className="font-semibold text-gray-900 dark:text-white">{subject}</p>}
+          {warning && <p className="text-gray-600 dark:text-gray-300">{warning}</p>}
+        </div>
+      )}
+    </Dialog>
   );
 }
