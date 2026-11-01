@@ -104,7 +104,7 @@ export default function AuthBrandPanel() {
           className="flex items-center justify-between border-t border-white/10 pt-6"
           style={{ animation: "fade-in-up 0.5s ease 0.55s both" }}
         >
-          {[["۹۹.۹٪", "پایداری بروکر"], ["۲۴/۷", "بروکر همیشه فعال"], ["< ۵۰ms", "میانگین تأخیر"]].map(([num, lbl]) => (
+          {[["MQTT 3.1.1", "پروتکل استاندارد"], ["TLS", "اتصال رمزنگاری‌شده"], ["WebSocket", "اتصال از مرورگر"]].map(([num, lbl]) => (
             <div key={lbl} className="text-center">
               <p className="text-lg font-bold text-white">{num}</p>
               <p className="text-xs text-white/40 mt-0.5">{lbl}</p>

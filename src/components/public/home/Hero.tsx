@@ -5,16 +5,10 @@ import Link from "next/link";
 import { ArrowLeft, Check, Copy, Sparkles, Terminal } from "lucide-react";
 import { Reveal } from "@/components/public/shared/Reveal";
 import { Button } from "@/components/public/shared/Button";
-import { CountUp } from "@/components/public/shared/CountUp";
 import { BrokerTopology } from "./BrokerTopology";
 import { CLI_COMMAND } from "./signal";
 import type { FeaturedBlog, FeaturedNews } from "./types";
 
-const stats = [
-  { value: "۵۰ms", label: "میانگین تأخیر پیام", animate: true, accent: false },
-  { value: "۹۹.۹٪", label: "پایداری بروکر", animate: true, accent: true },
-  { value: "۲۴/۷", label: "بروکر همیشه فعال", animate: false, accent: false },
-];
 
 /**
  * The hero's motion is purely decorative marketing flourish, so it
@@ -134,19 +128,6 @@ export default function Hero({
                 <Button href="/pricing" variant="secondary" size="lg" className="w-full rounded-2xl bg-white/80 backdrop-blur-md sm:w-auto dark:bg-white/[0.04]">
                   مشاهده تعرفه‌ها
                 </Button>
-              </div>
-            </Reveal>
-
-            <Reveal forceMotion delay={0.28}>
-              <div className="grid max-w-lg grid-cols-3 gap-3 border-t border-gray-200 pt-5 dark:border-white/10 sm:gap-4">
-                {stats.map((s) => (
-                  <div key={s.label} className="min-w-0">
-                    <div className={`text-xl font-black sm:text-3xl ${s.accent ? "text-success-600 dark:text-theme-cyan-500" : "text-gray-900 dark:text-white"}`}>
-                      {s.animate ? <CountUp forceMotion value={s.value} /> : s.value}
-                    </div>
-                    <div className="mt-0.5 text-[11px] font-medium text-gray-500 dark:text-gray-400 sm:text-xs">{s.label}</div>
-                  </div>
-                ))}
               </div>
             </Reveal>
           </div>

@@ -136,9 +136,9 @@ export default function OGImage() {
           }}
         >
           {[
-            { name: "Broker Uptime", value: "99.9%", up: true },
-            { name: "Avg. Latency", value: "50ms", up: true },
+            { name: "Protocol", value: "MQTT 3.1.1", up: true },
             { name: "Encryption", value: "TLS", up: true },
+            { name: "Browsers", value: "WebSocket", up: true },
           ].map((ind) => (
             <div
               key={ind.name}
@@ -165,7 +165,7 @@ export default function OGImage() {
                   padding: "3px 8px",
                 }}
               >
-                {ind.up ? "↑" : "↓"}
+                {ind.up ? "✓" : "✗"}
               </span>
             </div>
           ))}
