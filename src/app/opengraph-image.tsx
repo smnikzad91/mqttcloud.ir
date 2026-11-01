@@ -176,18 +176,27 @@ export default function OGImage() {
               width: 72,
               height: 72,
               borderRadius: 20,
-              background: "linear-gradient(135deg, #465fff, #3641f5)",
+              background: "#ffffff",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 36,
-              fontWeight: 900,
-              color: "white",
-              boxShadow: "0 8px 32px rgba(70,95,255,0.5)",
+              boxShadow: "0 8px 32px rgba(10,20,80,0.35)",
               marginBottom: 24,
             }}
           >
-            M
+            {/* Cloud hub mark (same geometry as src/brand/mark.svg), cut-outs painted white to match the tile */}
+            <svg width="56" height="56" viewBox="12 12 40 40">
+              <circle cx="21" cy="38" r="9" fill="#465fff" />
+              <circle cx="43" cy="38" r="9" fill="#465fff" />
+              <circle cx="32" cy="29" r="12" fill="#465fff" />
+              <rect x="21" y="38" width="22" height="9" fill="#465fff" />
+              <path d="M32 35 L32 24 M32 35 L23.5 42 M32 35 L40.5 42" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" />
+              <circle cx="32" cy="24" r="3.4" fill="#ffffff" />
+              <circle cx="23.5" cy="42" r="3.4" fill="#ffffff" />
+              <circle cx="40.5" cy="42" r="3.4" fill="#ffffff" />
+              <circle cx="32" cy="35" r="5.4" fill="#ffffff" />
+              <circle cx="32" cy="35" r="2.4" fill="#7a5af8" />
+            </svg>
           </div>
 
           {/* Brand name */}

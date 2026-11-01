@@ -6,8 +6,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ChevronLeft, Menu, X } from "lucide-react";
 import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
-import MarkIcon from "@/brand/mark.svg";
-import MarkWhiteIcon from "@/brand/mark-white.svg";
+import { BrandMark } from "@/components/common/BrandMark";
 import { SocialIcon, PLATFORM_LABELS_FA } from "@/components/common/SocialIcon";
 import { Button } from "@/components/public/shared/Button";
 import { easeSignal, staggerContainer, staggerItem } from "@/components/public/shared/motion";
@@ -32,8 +31,7 @@ const navLinks = [
 function Logo() {
   return (
     <Link href="/" className="flex shrink-0 items-center gap-2.5">
-      <MarkIcon viewBox="6 12 36 36" className="shrink-0 dark:hidden" width={36} height={36} />
-      <MarkWhiteIcon viewBox="6 12 36 36" className="hidden shrink-0 dark:block" width={36} height={36} />
+      <BrandMark size={36} />
       <span dir="ltr" className="text-lg leading-none font-black tracking-tight text-gray-900 dark:text-white">
         mqttcloud<span className="bg-gradient-to-r from-brand-500 to-theme-cyan-500 bg-clip-text text-transparent">.ir</span>
       </span>

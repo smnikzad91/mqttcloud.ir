@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SocialIcon, PLATFORM_LABELS_FA } from "@/components/common/SocialIcon";
+import { BrandMark } from "@/components/common/BrandMark";
 import { Reveal } from "@/components/public/shared/Reveal";
 import { Button } from "@/components/public/shared/Button";
 import type { SocialLinkItem } from "@/components/public/home/types";
@@ -44,7 +45,7 @@ export default function PublicFooter() {
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 pb-10 lg:grid-cols-12 lg:gap-10 lg:pb-12">
           <div className="col-span-2 space-y-4 lg:col-span-4">
             <Link href="/" className="inline-flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-500 to-theme-cyan-500 font-black text-gray-950">M</span>
+              <BrandMark size={36} />
               <span dir="ltr" className="text-xl font-black">
                 <span className="text-gray-900 dark:text-white">mqttcloud</span>
                 <span className="text-brand-600 dark:text-theme-cyan-500">.ir</span>

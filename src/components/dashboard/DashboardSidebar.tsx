@@ -6,8 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { ChevronDown, ArrowUpRight, LogOut } from "lucide-react";
-import MarkIcon from "@/brand/mark.svg";
-import MarkWhiteIcon from "@/brand/mark-white.svg";
+import { BrandMark } from "@/components/common/BrandMark";
 import { useT } from "@/i18n/useT";
 import { cn } from "./ui";
 import type { NavSection } from "./nav";
@@ -98,11 +97,10 @@ export default function DashboardSidebar({
         {/* Logo */}
         <div className={cn("flex h-16 shrink-0 items-center border-b border-gray-100 px-4 dark:border-gray-800", expanded ? "gap-2.5" : "justify-center")}>
           <Link href={homeHref} className="flex items-center gap-2.5" aria-label="mqttcloud.ir">
-            <MarkIcon viewBox="6 12 36 36" className="shrink-0 dark:hidden" width={34} height={34} />
-            <MarkWhiteIcon viewBox="6 12 36 36" className="hidden shrink-0 dark:block" width={34} height={34} />
+            <BrandMark size={34} />
             {expanded && (
               <span dir="ltr" className="text-base font-bold tracking-tight text-gray-900 dark:text-white">
-                mqttcloud<span className="font-mono-signal font-normal text-[#16b8c9] dark:text-theme-cyan-500">.ir</span>
+                mqttcloud<span className="font-mono-signal font-normal text-brand-500 dark:text-theme-cyan-500">.ir</span>
               </span>
             )}
           </Link>

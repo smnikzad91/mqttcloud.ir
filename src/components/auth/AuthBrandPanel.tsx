@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import MarkWhiteIcon from "@/brand/mark-white.svg";
+import { BrandMark } from "@/components/common/BrandMark";
 
 const signals = [
   {
@@ -55,9 +55,9 @@ export default function AuthBrandPanel() {
           className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
           style={{ animation: "fade-in-up 0.5s ease both" }}
         >
-          <MarkWhiteIcon viewBox="6 12 36 36" className="shrink-0" width={36} height={36} />
+          <BrandMark size={36} tone="dark" />
           <span className="text-2xl font-extrabold text-white tracking-tight">
-            mqttcloud<span className="font-mono font-normal text-[#16b8c9]">.ir</span>
+            mqttcloud<span className="font-mono font-normal text-theme-cyan-500">.ir</span>
           </span>
         </Link>
 
