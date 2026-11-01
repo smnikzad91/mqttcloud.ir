@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { newsHref } from "@/lib/newsSlug";
 import Image from "next/image";
 import { useState } from "react";
 import { Newspaper } from "lucide-react";
@@ -13,6 +14,7 @@ import { newsTagConfig, stripHash, formatDateFa } from "@/components/public/shar
 
 export interface NewsItem {
   id: string;
+  slug: string;
   category: string;
   hashtags?: string[];
   title: string;
@@ -99,7 +101,7 @@ export default function NewsPageClient({ news }: Props) {
             return (
             <Reveal className="mb-6">
               <Link
-                href={`/news/${featured.id}`}
+                href={newsHref(featured)}
                 className="group relative block overflow-hidden rounded-3xl shadow-lg shadow-black/5 transition-all duration-300 hover:shadow-xl hover:shadow-black/10 hover:-translate-y-0.5"
               >
                 {/* Banner */}
@@ -172,7 +174,7 @@ export default function NewsPageClient({ news }: Props) {
                 return (
                   <StaggerItem key={item.id}>
                     <Link
-                      href={`/news/${item.id}`}
+                      href={newsHref(item)}
                       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5 dark:border-gray-800 dark:bg-gray-900"
                     >
                       {/* Image or color strip */}

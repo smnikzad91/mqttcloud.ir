@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { newsHref } from "@/lib/newsSlug";
 import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { ReadingProgress } from "@/components/public/shared/ReadingProgress";
@@ -11,6 +12,7 @@ import { newsTagConfig, stripHash, formatDateFa } from "@/components/public/shar
 
 export interface NewsItemDetail {
   id: string;
+  slug: string;
   category: string;
   hashtags?: string[];
   title: string;
@@ -23,6 +25,7 @@ export interface NewsItemDetail {
 
 export interface NewsItemSummary {
   id: string;
+  slug: string;
   category: string;
   title: string;
   image?: string;
@@ -165,7 +168,7 @@ export default function NewsPostClient({ item, related }: Props) {
                         return (
                           <Link
                             key={n.id}
-                            href={`/news/${n.id}`}
+                            href={newsHref(n)}
                             className="group block overflow-hidden rounded-xl border border-gray-200 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md dark:border-gray-700 dark:hover:border-brand-700"
                           >
                             {n.image && (

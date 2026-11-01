@@ -24,6 +24,7 @@ export default async function NewsPage() {
 
   const news = raw.map((n) => ({
     id:          String(n._id),
+    slug:        n.slug ?? "",
     category:    n.category,
     title:       n.title,
     body:        n.body,

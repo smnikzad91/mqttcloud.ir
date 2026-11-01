@@ -18,7 +18,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   try {
-    await notifyNews({ id: String(item._id), title: item.title, hashtags: item.hashtags ?? [], coverImage: item.coverImage ?? undefined });
+    await notifyNews({ id: String(item._id), slug: item.slug, title: item.title, hashtags: item.hashtags ?? [], coverImage: item.coverImage ?? undefined });
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Telegram error";

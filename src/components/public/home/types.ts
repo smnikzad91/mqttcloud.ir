@@ -11,6 +11,7 @@ export interface FeaturedBlog {
 
 export interface FeaturedNews {
   id: string;
+  slug: string;
   category: string;
   title: string;
   body: string;

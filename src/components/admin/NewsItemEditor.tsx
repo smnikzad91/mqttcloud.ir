@@ -13,12 +13,12 @@ import { useLanguage } from "@/context/LanguageContext";
 import ChipInput from "@/components/dashboard/ChipInput";
 import { Switch } from "@/components/dashboard/OrderedList";
 import { PageHeader, Panel, Field, SkeletonRows, StatusBadge, inputClass, buttonClass, cn } from "@/components/dashboard/ui";
-import { ImageSlot, useUnsavedGuard } from "./EditorParts";
+import { ImageSlot, slugify, useUnsavedGuard } from "./EditorParts";
 
-type NewsForm = { category: string; title: string; body: string; publishedAt: string; highlight: boolean; published: boolean; hashtags: string[]; image: string; coverImage: string };
+type NewsForm = { slug: string; category: string; title: string; body: string; publishedAt: string; highlight: boolean; published: boolean; hashtags: string[]; image: string; coverImage: string };
 
 const today = () => new Date().toISOString().slice(0, 10);
-const EMPTY: NewsForm = { category: "", title: "", body: "", publishedAt: today(), highlight: false, published: false, hashtags: [], image: "", coverImage: "" };
+const EMPTY: NewsForm = { slug: "", category: "", title: "", body: "", publishedAt: today(), highlight: false, published: false, hashtags: [], image: "", coverImage: "" };
 
 export default function NewsItemEditor({ id }: { id?: string }) {
   const t = useT();
@@ -30,6 +30,7 @@ export default function NewsItemEditor({ id }: { id?: string }) {
   const [initial, setInitial] = useState<NewsForm | null>(isNew ? EMPTY : null);
   const [form, setForm] = useState<NewsForm>(EMPTY);
   const [categories, setCategories] = useState<string[]>([]);
+  const [slugTouched, setSlugTouched] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -41,6 +42,7 @@ export default function NewsItemEditor({ id }: { id?: string }) {
     if (!id) return;
     fetch(`/api/admin/news/${id}`).then((r) => r.json()).then((d) => {
       const loaded: NewsForm = {
+        slug: d.slug ?? "",
         category: (d.category || "").replace(/^#/, ""), title: d.title ?? "", body: d.body ?? "",
         publishedAt: d.publishedAt ? new Date(d.publishedAt).toISOString().slice(0, 10) : "",
         highlight: !!d.highlight, published: !!d.published, hashtags: d.hashtags ?? [], image: d.image ?? "", coverImage: d.coverImage ?? "",
@@ -53,6 +55,8 @@ export default function NewsItemEditor({ id }: { id?: string }) {
   const dirty = useMemo(() => !!initial && JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
   useUnsavedGuard(dirty && !saving);
   const set = <K extends keyof NewsForm>(k: K, v: NewsForm[K]) => setForm((f) => ({ ...f, [k]: v }));
+  // Like the blog: the slug follows a latin title until edited by hand (Persian titles need a typed slug).
+  const setTitle = (title: string) => setForm((f) => ({ ...f, title, slug: slugTouched ? f.slug : slugify(title) }));
   const willNotify = form.published && (isNew || !initial?.published);
 
   const save = async (e: React.FormEvent) => {
@@ -86,7 +90,13 @@ export default function NewsItemEditor({ id }: { id?: string }) {
           <Panel title={t("edContent")}>
             <div className="space-y-4">
               <Field label={t("newsFieldTitle")} htmlFor="ni-title">
-                <input id="ni-title" required dir="auto" value={form.title} onChange={(e) => set("title", e.target.value)} placeholder={t("newsFieldTitlePlaceholder")} className={cn(inputClass, "text-base font-semibold")} />
+                <input id="ni-title" required dir="auto" value={form.title} onChange={(e) => setTitle(e.target.value)} placeholder={t("newsFieldTitlePlaceholder")} className={cn(inputClass, "text-base font-semibold")} />
+              </Field>
+              <Field label={t("blogFieldSlug")} hint={t("edSlugHint")} htmlFor="ni-slug">
+                <div className="flex items-center gap-0 overflow-hidden rounded-xl border border-gray-300 dark:border-gray-700" dir="ltr">
+                  <span className="bg-gray-50 px-3 py-2.5 font-mono-signal text-xs text-gray-400 dark:bg-white/[0.03]">/news/</span>
+                  <input id="ni-slug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" maxLength={80} value={form.slug} onChange={(e) => { setSlugTouched(true); set("slug", slugify(e.target.value) || e.target.value); }} placeholder="news-url-slug" className="h-11 flex-1 bg-white px-2 font-mono-signal text-sm text-gray-900 outline-none dark:bg-gray-900 dark:text-white" />
+                </div>
               </Field>
               <Field label={t("newsFieldBody")} htmlFor="ni-body">
                 <textarea id="ni-body" required dir="auto" rows={12} value={form.body} onChange={(e) => set("body", e.target.value)} placeholder={t("newsFieldBodyPlaceholder")} className={cn(inputClass, "h-auto resize-y py-3 leading-7")} />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { newsHref } from "@/lib/newsSlug";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Sparkles, Terminal } from "lucide-react";
 import { HeroRise } from "@/components/public/shared/HeroRise";
@@ -35,7 +36,7 @@ export default function Hero({
   const featured = featuredBlog
     ? { href: `/blog/${featuredBlog.slug}`, label: `پست ویژه: ${featuredBlog.title}` }
     : featuredNews
-      ? { href: `/news/${featuredNews.id}`, label: `تازه‌ترین: ${featuredNews.title}` }
+      ? { href: newsHref(featuredNews), label: `تازه‌ترین: ${featuredNews.title}` }
       : null;
 
   return (

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { newsHref } from "@/lib/newsSlug";
 import { connectDB } from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 import NewsItem from "@/models/NewsItem";
@@ -12,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [blogPosts, newsItems] = await Promise.all([
     BlogPost.find({ published: true }).select("slug updatedAt createdAt").lean(),
-    NewsItem.find({ published: true }).select("_id publishedAt updatedAt").lean(),
+    NewsItem.find({ published: true }).select("_id slug publishedAt updatedAt").lean(),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -33,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const newsRoutes: MetadataRoute.Sitemap = newsItems.map((n) => ({
-    url: `${BASE_URL}/news/${String(n._id)}`,
+    url: `${BASE_URL}${newsHref(n)}`,
     lastModified: (n.updatedAt ?? n.publishedAt) as Date,
     changeFrequency: "monthly",
     priority: 0.6,

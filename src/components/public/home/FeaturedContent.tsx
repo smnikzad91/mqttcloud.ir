@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { newsHref } from "@/lib/newsSlug";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Calendar, Clock, ShieldCheck, Sparkles, Zap } from "lucide-react";
@@ -47,7 +48,7 @@ export default function FeaturedContent({
           {featuredNews && (
             <Reveal delay={0.12}>
               <FeatureCard
-                href={`/news/${featuredNews.id}`}
+                href={newsHref(featuredNews)}
                 image={featuredNews.image}
                 title={featuredNews.title}
                 excerpt={featuredNews.body}

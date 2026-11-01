@@ -1,6 +1,7 @@
 "use client";
 
 import ContentList, { type ContentRow } from "./ContentList";
+import { newsHref } from "@/lib/newsSlug";
 
 // Defined at module scope so ContentList's load callback stays stable.
 function mapNews(n: Record<string, unknown>): ContentRow {
@@ -12,7 +13,7 @@ function mapNews(n: Record<string, unknown>): ContentRow {
     highlight: !!n.highlight,
     cover: (n.coverImage as string) || (n.image as string) || undefined,
     date: String(n.publishedAt ?? ""),
-    publicHref: `/news/${n.id}`,
+    publicHref: newsHref({ slug: n.slug as string | undefined, id: String(n.id) }),
   };
 }
 

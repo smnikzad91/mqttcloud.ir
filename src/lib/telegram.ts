@@ -95,6 +95,7 @@ async function sendPost(photoUrl: string, caption: string, options: SendOptions 
 
 export interface NewsPayload {
   id:          string;
+  slug?:       string;
   title:       string;
   hashtags?:   string[];
   coverImage?: string;
@@ -118,7 +119,7 @@ export interface AnnouncementPayload {
 }
 
 export async function notifyNews(news: NewsPayload) {
-  const url    = `${SITE}/news/${news.id}`;
+  const url    = `${SITE}/news/${news.slug || news.id}`;
   const markup = { inline_keyboard: [[{ text: "📰 مطالعه خبر", url }]] };
   const tags   = (news.hashtags ?? []).map((t) => `#${t.replace(/\s+/g, "_")}`).join(" ");
 

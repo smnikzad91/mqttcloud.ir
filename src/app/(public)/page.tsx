@@ -19,7 +19,7 @@ export default async function HomePage() {
 
   const [rawBlog, rawNews, rawFaqs] = await Promise.all([
     BlogPost.findOne({ highlight: true, published: true }).select("slug category title excerpt coverImage readTime").lean(),
-    NewsItem.findOne({ highlight: true, published: true }).select("_id category title body image publishedAt").lean(),
+    NewsItem.findOne({ highlight: true, published: true }).select("_id slug category title body image publishedAt").lean(),
     Faq.find({ active: true }).sort({ order: 1, createdAt: -1 }).select("question answer").lean(),
   ]);
 
@@ -37,6 +37,7 @@ export default async function HomePage() {
   const featuredNews = rawNews
     ? {
         id:          String(rawNews._id),
+        slug:        rawNews.slug ?? "",
         category:    rawNews.category,
         title:       rawNews.title,
         body:        rawNews.body,

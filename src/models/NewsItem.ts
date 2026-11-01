@@ -1,6 +1,7 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
 
 export interface INewsItem extends Document {
+  slug?: string;
   category: string;
   hashtags: string[];
   title: string;
@@ -16,6 +17,8 @@ export interface INewsItem extends Document {
 
 const NewsItemSchema = new Schema<INewsItem>(
   {
+    // URL slug (/news/<slug>); sparse so an item saved before slugs existed is still valid.
+    slug:        { type: String, trim: true, lowercase: true, unique: true, sparse: true },
     category:    { type: String, required: true, trim: true },
     hashtags:    [{ type: String, trim: true }],
     title:       { type: String, required: true, trim: true },

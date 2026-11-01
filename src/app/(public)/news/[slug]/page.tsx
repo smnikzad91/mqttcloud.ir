@@ -1,14 +1,26 @@
-import { notFound } from "next/navigation";
+import { isValidObjectId } from "mongoose";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Metadata } from "next";
 import NewsPostClient from "@/components/public/NewsPostClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { connectDB } from "@/lib/mongodb";
 import NewsItem from "@/models/NewsItem";
+import { newsHref } from "@/lib/newsSlug";
 
 export const dynamic = "force-dynamic";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
+}
+
+/**
+ * A published item by its slug. Older links used the database id (/news/<id>):
+ * those still resolve, and the page redirects them to the slug URL.
+ */
+async function findNews(param: string) {
+  const bySlug = await NewsItem.findOne({ slug: param.toLowerCase(), published: true }).lean().catch(() => null);
+  if (bySlug) return bySlug;
+  return isValidObjectId(param) ? NewsItem.findOne({ _id: param, published: true }).lean().catch(() => null) : null;
 }
 
 const SITE = "https://mqttcloud.ir";
@@ -23,12 +35,12 @@ function stripMarkdown(text: string, max = 155) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { slug } = await params;
   await connectDB();
-  const item = await NewsItem.findOne({ _id: id, published: true }).lean().catch(() => null);
+  const item = await findNews(slug);
   if (!item) return {};
 
-  const url = `https://mqttcloud.ir/news/${id}`;
+  const url = `${SITE}${newsHref(item)}`;
   const description = stripMarkdown(item.body);
   // An uploaded image's real size is unknown, so only the default card declares dimensions.
   const ogImage = item.coverImage ?? item.image
@@ -63,14 +75,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function NewsDetailPage({ params }: Props) {
-  const { id } = await params;
+  const { slug } = await params;
   await connectDB();
 
-  const raw = await NewsItem.findOne({ _id: id, published: true }).lean().catch(() => null);
+  const raw = await findNews(slug);
   if (!raw) notFound();
+  // Old /news/<id> links (and any non-canonical spelling) move permanently to the slug URL.
+  if (raw.slug && slug !== raw.slug) permanentRedirect(newsHref(raw));
 
   const item = {
     id:          String(raw._id),
+    slug:        raw.slug ?? "",
     category:    raw.category,
     hashtags:    raw.hashtags ?? [],
     title:       raw.title,
@@ -88,11 +103,12 @@ export default async function NewsDetailPage({ params }: Props) {
   })
     .sort({ publishedAt: -1 })
     .limit(4)
-    .select("_id category title image highlight publishedAt")
+    .select("_id slug category title image highlight publishedAt")
     .lean();
 
   const related = relatedRaw.map((n) => ({
     id:          String(n._id),
+    slug:        n.slug ?? "",
     category:    n.category,
     title:       n.title,
     image:       n.image ?? undefined,
@@ -100,7 +116,7 @@ export default async function NewsDetailPage({ params }: Props) {
     publishedAt: n.publishedAt ? (n.publishedAt as Date).toISOString() : undefined,
   }));
 
-  const url = `https://mqttcloud.ir/news/${item.id}`;
+  const url = `${SITE}${newsHref(item)}`;
   const image = item.coverImage ?? item.image;
   const newsArticleJsonLd = {
     "@context": "https://schema.org",

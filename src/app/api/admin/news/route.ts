@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import NewsItem from "@/models/NewsItem";
 import { notifyNews } from "@/lib/telegram";
+import { newsSlugError } from "@/lib/newsSlug";
 
 export async function GET() {
   const session = await auth();
@@ -16,6 +17,7 @@ export async function GET() {
   return NextResponse.json(
     items.map((n) => ({
       id:          n._id,
+      slug:        n.slug ?? "",
       category:    n.category,
       hashtags:    n.hashtags ?? [],
       title:       n.title,
@@ -38,14 +40,19 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { category, hashtags, title, body: text, image, coverImage, highlight, published, publishedAt } = body;
+  const slug = String(body.slug ?? "").trim().toLowerCase();
 
   if (!category || !title || !text) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  const slugError = newsSlugError(slug);
+  if (slugError) return NextResponse.json({ error: slugError }, { status: 400 });
 
   await connectDB();
+  if (await NewsItem.exists({ slug })) return NextResponse.json({ error: "Slug already exists" }, { status: 409 });
   if (highlight) await NewsItem.updateMany({}, { $set: { highlight: false } });
   const item = await NewsItem.create({
+    slug,
     category,
     hashtags: hashtags ?? [],
     title,
@@ -58,8 +65,8 @@ export async function POST(req: NextRequest) {
   });
 
   if (item.published) {
-    void notifyNews({ id: String(item._id), title: item.title, hashtags: item.hashtags ?? [], coverImage: item.coverImage ?? undefined });
+    void notifyNews({ id: String(item._id), slug: item.slug, title: item.title, hashtags: item.hashtags ?? [], coverImage: item.coverImage ?? undefined });
   }
 
-  return NextResponse.json({ id: item._id }, { status: 201 });
+  return NextResponse.json({ id: item._id, slug: item.slug }, { status: 201 });
 }
