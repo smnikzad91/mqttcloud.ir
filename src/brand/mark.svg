@@ -1,20 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="12 12 40 40" fill="none">
-  <!-- Cloud hub, for light backgrounds. The hub and spokes are real holes (mask), so the mark sits on any surface. -->
-  <defs>
-    <mask id="mqc-mark-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
-      <rect width="64" height="64" fill="#fff"/>
-      <path d="M32 35 L32 24 M32 35 L23.5 42 M32 35 L40.5 42" stroke="#000" stroke-width="3.2" stroke-linecap="round"/>
-      <circle cx="32" cy="24" r="3.4" fill="#000"/>
-      <circle cx="23.5" cy="42" r="3.4" fill="#000"/>
-      <circle cx="40.5" cy="42" r="3.4" fill="#000"/>
-      <circle cx="32" cy="35" r="5.4" fill="#000"/>
-    </mask>
-  </defs>
-  <g mask="url(#mqc-mark-cut)" fill="#465fff">
-    <circle cx="21" cy="38" r="9"/>
-    <circle cx="43" cy="38" r="9"/>
-    <circle cx="32" cy="29" r="12"/>
-    <rect x="21" y="38" width="22" height="9"/>
-  </g>
-  <circle cx="32" cy="35" r="2.4" fill="#7a5af8"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="10 9.5 44 44" fill="none">
+  <!-- Cloud hub for light backgrounds: brand-to-violet, the primary-button gradient. Cut-outs are real holes (mask). -->
+  <defs><linearGradient id="mqc-mark-fill" x1="10" y1="15" x2="54" y2="48" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#465fff"/><stop offset="1" stop-color="#7a5af8"/></linearGradient><mask id="mqc-mark-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><rect width="64" height="64" fill="#fff"/><path d="M32 33 L32 22 M32 33 L24 41 M32 33 L40 41" stroke="#000" stroke-width="4.6" stroke-linecap="round"/><circle cx="32" cy="22" r="4.4" fill="#000"/><circle cx="24" cy="41" r="4.4" fill="#000"/><circle cx="40" cy="41" r="4.4" fill="#000"/><circle cx="32" cy="33" r="6.4" fill="#000"/></mask></defs>
+  <g mask="url(#mqc-mark-cut)" fill="url(#mqc-mark-fill)"><circle cx="20.5" cy="38" r="10"/><circle cx="43.5" cy="38" r="10"/><circle cx="32" cy="28" r="13"/><rect x="20.5" y="38" width="23" height="10"/></g>
+  <circle cx="32" cy="33" r="2.8" fill="#465fff"/>
 </svg>

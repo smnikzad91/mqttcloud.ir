@@ -184,18 +184,24 @@ export default function OGImage() {
               marginBottom: 24,
             }}
           >
-            {/* Cloud hub mark (same geometry as src/brand/mark.svg), cut-outs painted white to match the tile */}
-            <svg width="56" height="56" viewBox="12 12 40 40">
-              <circle cx="21" cy="38" r="9" fill="#465fff" />
-              <circle cx="43" cy="38" r="9" fill="#465fff" />
-              <circle cx="32" cy="29" r="12" fill="#465fff" />
-              <rect x="21" y="38" width="22" height="9" fill="#465fff" />
-              <path d="M32 35 L32 24 M32 35 L23.5 42 M32 35 L40.5 42" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" />
-              <circle cx="32" cy="24" r="3.4" fill="#ffffff" />
-              <circle cx="23.5" cy="42" r="3.4" fill="#ffffff" />
-              <circle cx="40.5" cy="42" r="3.4" fill="#ffffff" />
-              <circle cx="32" cy="35" r="5.4" fill="#ffffff" />
-              <circle cx="32" cy="35" r="2.4" fill="#7a5af8" />
+            {/* Cloud hub mark (same geometry and light-theme gradient as src/brand/mark.svg); cut-outs painted white to match the tile */}
+            <svg width="58" height="58" viewBox="10 9.5 44 44">
+              <defs>
+                <linearGradient id="og-mark" x1="10" y1="15" x2="54" y2="48" gradientUnits="userSpaceOnUse">
+                  <stop offset="0" stopColor="#465fff" />
+                  <stop offset="1" stopColor="#7a5af8" />
+                </linearGradient>
+              </defs>
+              <circle cx="20.5" cy="38" r="10" fill="url(#og-mark)" />
+              <circle cx="43.5" cy="38" r="10" fill="url(#og-mark)" />
+              <circle cx="32" cy="28" r="13" fill="url(#og-mark)" />
+              <rect x="20.5" y="38" width="23" height="10" fill="url(#og-mark)" />
+              <path d="M32 33 L32 22 M32 33 L24 41 M32 33 L40 41" stroke="#ffffff" strokeWidth="4.6" strokeLinecap="round" />
+              <circle cx="32" cy="22" r="4.4" fill="#ffffff" />
+              <circle cx="24" cy="41" r="4.4" fill="#ffffff" />
+              <circle cx="40" cy="41" r="4.4" fill="#ffffff" />
+              <circle cx="32" cy="33" r="6.4" fill="#ffffff" />
+              <circle cx="32" cy="33" r="2.8" fill="#465fff" />
             </svg>
           </div>
 

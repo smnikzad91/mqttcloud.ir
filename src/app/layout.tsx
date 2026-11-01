@@ -49,8 +49,9 @@ export default function RootLayout({
     <html lang="en" dir="ltr" className="dark" suppressHydrationWarning>
       <head>
         <Script id="theme-lang-init" strategy="beforeInteractive" src="/theme-init.js" />
-        <link rel="icon" href="/images/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/svg+xml" href="/images/logo/logo-icon.svg" />
+        {/* Favicon: src/app/favicon.ico (16px is a simplified cut, 32/48 the full mark) and
+            src/app/apple-icon.png are linked by Next. No SVG favicon: browsers would scale it
+            down to 16px and lose the hub detail. */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link

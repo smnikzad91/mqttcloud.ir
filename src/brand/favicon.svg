@@ -1,16 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none">
-  <!-- Favicon / app tile: white cloud hub on the brand blue tile. -->
-  <rect width="64" height="64" rx="14" fill="#465fff"/>
-  <g transform="translate(4 2) scale(0.875)">
-    <circle cx="21" cy="38" r="9" fill="#ffffff"/>
-    <circle cx="43" cy="38" r="9" fill="#ffffff"/>
-    <circle cx="32" cy="29" r="12" fill="#ffffff"/>
-    <rect x="21" y="38" width="22" height="9" fill="#ffffff"/>
-    <path d="M32 35 L32 24 M32 35 L23.5 42 M32 35 L40.5 42" stroke="#465fff" stroke-width="3.4" stroke-linecap="round"/>
-    <circle cx="32" cy="24" r="3.4" fill="#465fff"/>
-    <circle cx="23.5" cy="42" r="3.4" fill="#465fff"/>
-    <circle cx="40.5" cy="42" r="3.4" fill="#465fff"/>
-    <circle cx="32" cy="35" r="5.4" fill="#465fff"/>
-    <circle cx="32" cy="35" r="2.4" fill="#00f0ff"/>
+  <!-- Favicon 32px and up / app tile: white cloud hub on the brand-to-violet tile. -->
+  <defs><linearGradient id="mqc-fav-bg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#465fff"/><stop offset="1" stop-color="#7a5af8"/></linearGradient><mask id="mqc-fav-cut" maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64"><rect width="64" height="64" fill="#fff"/><path d="M32 33 L32 22 M32 33 L24 41 M32 33 L40 41" stroke="#000" stroke-width="4.6" stroke-linecap="round"/><circle cx="32" cy="22" r="4.4" fill="#000"/><circle cx="24" cy="41" r="4.4" fill="#000"/><circle cx="40" cy="41" r="4.4" fill="#000"/><circle cx="32" cy="33" r="6.4" fill="#000"/></mask></defs>
+  <rect width="64" height="64" rx="14" fill="url(#mqc-fav-bg)"/>
+  <g transform="translate(32 32) scale(1.1) translate(-32 -31.5)">
+    <g mask="url(#mqc-fav-cut)" fill="#ffffff"><circle cx="20.5" cy="38" r="10"/><circle cx="43.5" cy="38" r="10"/><circle cx="32" cy="28" r="13"/><rect x="20.5" y="38" width="23" height="10"/></g>
+    <circle cx="32" cy="33" r="2.8" fill="#ffffff"/>
   </g>
 </svg>
