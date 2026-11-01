@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { LegalText } from "@/components/public/shared/LegalText";
 import { toast } from "sonner";
 import { ExternalLink } from "lucide-react";
 import { useT } from "@/i18n/useT";
@@ -10,14 +11,12 @@ import { PageHeader, Panel, Field, SkeletonRows, FilterPills, StatusBadge, input
 type LegalType = "privacy" | "terms";
 type LegalData = { title: string; content: string; updatedAt?: string };
 
-/** Same paragraph rule as the public LegalPageClient, so the preview matches the site. */
+/** Same renderer as the public page (LegalText), so the preview matches the site. */
 function Preview({ title, content }: LegalData) {
   return (
     <article dir="auto" className="space-y-4">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{title}</h2>
-      {content.split(/\n\n+/).map((p, i) => (
-        <p key={i} className="whitespace-pre-line leading-8 text-gray-600 dark:text-gray-400">{p.trim()}</p>
-      ))}
+      <LegalText content={content} />
     </article>
   );
 }

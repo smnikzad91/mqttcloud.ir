@@ -7,7 +7,7 @@ import MqttClient from "@/models/MqttClient";
 import { sendDepositStatusEmail } from "@/lib/mailer";
 import { sendPlanChangedSms, newClientSmsId } from "@/lib/sms";
 import { assertUsageFitsPlan, PlanLimitError } from "@/lib/planEnforcement";
-import { PLAN_SUBSCRIPTION_DAYS } from "@/lib/plans";
+import { PLAN_SUBSCRIPTION_DAYS, PAID_SELF_SERVICE_PLANS, type PlanKey } from "@/lib/plans";
 
 // nodepass can redeliver the same event, and (per its own docs) a payment
 // can go PENDING -> EXPIRED -> PAID if the bank SMS lands just after expiry.
@@ -64,12 +64,14 @@ export async function handlePlanPurchaseWebhook(purchase: InstanceType<typeof Pl
       return;
     }
 
-    // Renewing the same plan before it lapses extends from the current end
-    // date, so paying early never costs the days already paid for.
+    // Any paid purchase (renewal, upgrade or switch) made before the current
+    // paid plan lapses extends from its end date, so days already paid for
+    // carry over instead of being lost. Free and enterprise have no paid
+    // period to carry.
     const current = await User.findById(purchase.userId).select("plan planExpiresAt").lean();
-    const base = current?.plan === purchase.targetPlan && current.planExpiresAt && current.planExpiresAt.getTime() > Date.now()
-      ? current.planExpiresAt.getTime()
-      : Date.now();
+    const carryOver = !!current && PAID_SELF_SERVICE_PLANS.includes(current.plan as PlanKey)
+      && !!current.planExpiresAt && current.planExpiresAt.getTime() > Date.now();
+    const base = carryOver ? current!.planExpiresAt!.getTime() : Date.now();
     const expiresAt = new Date(base + PLAN_SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000);
     const user = await User.findByIdAndUpdate(purchase.userId, {
       $set: {

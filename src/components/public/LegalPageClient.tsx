@@ -3,6 +3,7 @@ import { HeroRise } from "@/components/public/shared/HeroRise";
 import { Container } from "@/components/public/shared/Container";
 import { Button } from "@/components/public/shared/Button";
 import { AmbientGlow } from "@/components/public/shared/AmbientGlow";
+import { LegalText } from "@/components/public/shared/LegalText";
 
 export interface LegalData {
   title: string;
@@ -11,16 +12,6 @@ export interface LegalData {
 }
 
 const PAGE_NAME = { privacy: "حریم خصوصی", terms: "شرایط استفاده" } as const;
-
-function renderContent(content: string) {
-  return content
-    .split(/\n\n+/)
-    .map((para, i) => (
-      <p key={i} className="leading-8 text-gray-600 dark:text-gray-400 whitespace-pre-line">
-        {para.trim()}
-      </p>
-    ));
-}
 
 // The text comes from the server (privacy/terms page.tsx), so it is in the HTML crawlers
 // read; the H1 always renders, falling back to the page's name.
@@ -53,7 +44,7 @@ export default function LegalPageClient({ type, data }: { type: "privacy" | "ter
           {/* Content */}
           {hasContent ? (
             <article className="space-y-5 text-base" dir="rtl">
-              {renderContent(data!.content)}
+              <LegalText content={data!.content} />
             </article>
           ) : (
             <p className="py-12 text-center text-gray-400 dark:text-gray-500">
