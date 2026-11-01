@@ -15,7 +15,7 @@ import { PLAN_DEFS } from "@/lib/plans";
 
 const trustItems = [
   { icon: ShieldCheck, text: "پرداخت امن کارت‌به‌کارت" },
-  { icon: RefreshCw, text: "لغو هر زمان" },
+  { icon: RefreshCw, text: "بدون تمدید خودکار؛ فقط وقتی بخواهید پرداخت می‌کنید" },
   { icon: CreditCard, text: "بدون کارت بانکی برای پلن رایگان" },
   { icon: Headset, text: "پشتیبانی واکنش‌گرا" },
 ];
@@ -44,15 +44,15 @@ const plans: {
   {
     id: "free",
     name: "پلن رایگان",
-    monthlyPrice: fmtToman(PLAN_DEFS.free.priceToman ?? 0),
-    period: "همیشه رایگان",
+    monthlyPrice: "رایگان",
+    period: "برای همیشه",
     description: "برای شروع و آزمایش بروکر با پروژه‌های کوچک.",
     quota: "۱ اکانت MQTT · حداکثر ۲ کلاینت",
     features: [
-      "۱ اکانت MQTT (sub-user)",
-      "حداکثر ۲ کلاینت متصل در مجموع",
       "اتصال امن با TLS و WebSocket",
-      "۷ روز تاریخچه فعالیت اتصال",
+      "وضعیت زنده دستگاه‌ها و ۳۰ روز تاریخچه اتصال",
+      "مشاهده پیام‌های ۷ روز اخیر برای عیب‌یابی",
+      "پشتیبانی از طریق تیکت",
     ],
     cta: "شروع رایگان",
     highlight: false,
@@ -67,10 +67,10 @@ const plans: {
     description: "برای پروژه‌هایی که به چند اکانت و دستگاه بیشتر نیاز دارند.",
     quota: "تا ۳ اکانت MQTT · هر اکانت حداکثر ۳ کلاینت (حداکثر ۹ کلاینت کل)",
     features: [
-      "تا ۳ اکانت MQTT (sub-user)",
-      "هر اکانت حداکثر ۳ کلاینت — حداکثر ۹ کلاینت در مجموع",
-      "۳۰ روز تاریخچه فعالیت اتصال",
-      "پشتیبانی ایمیلی",
+      "همه امکانات پلن رایگان",
+      "۳ اکانت جدا برای پروژه‌ها یا مشتریان مختلف",
+      "تا ۹ دستگاه در مجموع",
+      "اعتبار ۳۰ روزه؛ تمدید زودهنگام روزهای باقی‌مانده را حفظ می‌کند",
     ],
     cta: "فعال‌سازی پلن پایه",
     highlight: false,
@@ -85,11 +85,10 @@ const plans: {
     description: "برای استارتاپ‌ها و پروژه‌های IoT با مقیاس رو‌به‌رشد.",
     quota: "تا ۵ اکانت MQTT · هر اکانت حداکثر ۵ کلاینت (حداکثر ۲۵ کلاینت کل)",
     features: [
-      "تا ۵ اکانت MQTT (sub-user)",
-      "هر اکانت حداکثر ۵ کلاینت — حداکثر ۲۵ کلاینت در مجموع",
-      "۳۰ روز تاریخچه فعالیت اتصال",
-      "دسترسی API برای مدیریت اکانت‌ها",
-      "پشتیبانی اولویت‌دار",
+      "همه امکانات پلن رایگان",
+      "۵ اکانت جدا برای پروژه‌ها یا مشتریان مختلف",
+      "تا ۲۵ دستگاه در مجموع",
+      "اعتبار ۳۰ روزه؛ تمدید زودهنگام روزهای باقی‌مانده را حفظ می‌کند",
     ],
     cta: "فعال‌سازی پلن استارتر",
     highlight: true,
@@ -128,6 +127,12 @@ export default function PricingPageClient() {
   const { data: session } = useSession();
   const loggedIn = !!session?.user;
   const [faqs, setFaqs] = useState<AccordionItemData[]>([]);
+  // Signed-in visitors see which card is their current plan.
+  const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null);
+  useEffect(() => {
+    if (!loggedIn) return;
+    fetch("/api/user/plan").then((r) => (r.ok ? r.json() : null)).then((d) => d?.plan && setCurrentPlan(d.plan)).catch(() => {});
+  }, [loggedIn]);
 
   useEffect(() => {
     fetch("/api/public/faqs").then((r) => r.json()).then((data) => {
@@ -164,6 +169,7 @@ export default function PricingPageClient() {
           {plans.map((plan) => {
             const isFree = plan.id === "free";
             const isCustom = plan.id === "enterprise";
+            const isCurrent = currentPlan === plan.id;
             return (
               <StaggerItem
                 key={plan.id}
@@ -238,13 +244,17 @@ export default function PricingPageClient() {
                     size="lg"
                     className={`mt-8 w-full ${plan.highlight ? "bg-none bg-white text-brand-600 hover:bg-brand-50" : ""}`}
                   >
-                    {plan.cta}
+                    {isCurrent ? "پلن فعلی شما · مدیریت اشتراک" : plan.cta}
                   </Button>
                 </div>
               </StaggerItem>
             );
           })}
         </Stagger>
+
+        <Reveal delay={0.1} className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          قیمت‌ها به تومان و برای ۳۰ روز است. پرداخت با همه کارت‌های بانکی از طریق درگاه nodepass انجام می‌شود و پلن بلافاصله فعال می‌شود.
+        </Reveal>
 
         {/* Trust strip */}
         <Reveal delay={0.15} className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
@@ -257,7 +267,7 @@ export default function PricingPageClient() {
         </Reveal>
 
         {/* ─── FAQ ─── */}
-        <div className="mt-28">
+        {faqs.length > 0 && <div className="mt-28">
           <SectionHeading
             eyebrow="پرسش و پاسخ"
             title="سوالات متداول"
@@ -271,12 +281,10 @@ export default function PricingPageClient() {
             }
           />
 
-          {faqs.length > 0 && (
-            <Reveal delay={0.1} className="mx-auto mt-10 max-w-3xl">
-              <Accordion items={faqs} variant="compact" />
-            </Reveal>
-          )}
-        </div>
+          <Reveal delay={0.1} className="mx-auto mt-10 max-w-3xl">
+            <Accordion items={faqs} variant="compact" />
+          </Reveal>
+        </div>}
       </Container>
     </div>
   );

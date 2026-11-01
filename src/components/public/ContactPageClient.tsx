@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Check, Lock, Mail, MessageCircle } from "lucide-react";
+import { ArrowLeft, Check, HelpCircle, LifeBuoy, Lock, Mail, MessageCircle } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { Reveal } from "@/components/public/shared/Reveal";
 import { Container } from "@/components/public/shared/Container";
 import { Button } from "@/components/public/shared/Button";
@@ -25,6 +26,7 @@ export default function ContactPageClient() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  const { data: session } = useSession();
 
   const inputClass =
     "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none transition-all focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500";
@@ -72,8 +74,26 @@ export default function ContactPageClient() {
           </p>
         </Reveal>
 
+        {/* Faster routes than the form: answers already written, and tracked tickets for customers */}
+        <Reveal delay={0.05} className="mt-10 grid gap-3 sm:grid-cols-2">
+          <Link href="/faq" className="group flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-brand-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500/40">
+            <HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" aria-hidden="true" />
+            <span>
+              <span className="block text-sm font-bold text-gray-900 group-hover:text-brand-600 dark:text-white dark:group-hover:text-brand-400">سوالات متداول</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">آدرس و پورت‌ها، Client ID، تاپیک‌ها، پلن‌ها و پرداخت.</span>
+            </span>
+          </Link>
+          <Link href={session?.user ? "/dashboard/support" : "/signin"} className="group flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-brand-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500/40">
+            <LifeBuoy className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" aria-hidden="true" />
+            <span>
+              <span className="block text-sm font-bold text-gray-900 group-hover:text-brand-600 dark:text-white dark:group-hover:text-brand-400">کاربر mqttcloud.ir هستید؟</span>
+              <span className="mt-0.5 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">برای مشکلات حساب و دستگاه‌ها از داشبورد تیکت ثبت کنید تا پاسخ‌ها در یک‌جا بماند.</span>
+            </span>
+          </Link>
+        </Reveal>
+
         {/* Form / Success */}
-        <Reveal delay={0.1} className="mt-12">
+        <Reveal delay={0.1} className="mt-8">
           <AnimatePresence mode="wait">
             {sent ? (
               <motion.div

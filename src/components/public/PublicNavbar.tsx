@@ -25,8 +25,8 @@ const navLinks = [
   { label: "امکانات", href: "/#features" },
   { label: "نحوه کار", href: "/#how-it-works" },
   { label: "قیمت‌گذاری", href: "/pricing" },
+  { label: "سوالات متداول", href: "/faq" },
   { label: "وبلاگ", href: "/blog" },
-  { label: "اخبار", href: "/news" },
 ];
 
 function Logo() {

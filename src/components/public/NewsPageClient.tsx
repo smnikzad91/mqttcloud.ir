@@ -7,6 +7,7 @@ import { Newspaper } from "lucide-react";
 import { Reveal } from "@/components/public/shared/Reveal";
 import { Stagger, StaggerItem } from "@/components/public/shared/Stagger";
 import { AmbientGlow } from "@/components/public/shared/AmbientGlow";
+import { ContentEmpty } from "@/components/public/shared/ContentEmpty";
 import { newsTagConfig, stripHash, formatDateFa } from "@/components/public/shared/contentTaxonomy";
 
 export interface NewsItem {
@@ -65,7 +66,7 @@ export default function NewsPageClient({ news }: Props) {
         </Reveal>
 
         {/* ─── Filter tabs ─── */}
-        <Reveal delay={0.1} className="mt-8 flex flex-wrap justify-center gap-2">
+        {news.length > 0 && <Reveal delay={0.1} className="mt-8 flex flex-wrap justify-center gap-2">
           {allTags.map((tag) => (
             <button
               key={tag}
@@ -79,12 +80,14 @@ export default function NewsPageClient({ news }: Props) {
               {tag}
             </button>
           ))}
-        </Reveal>
+        </Reveal>}
 
         {/* ─── Content ─── */}
         <section className="mt-12">
 
-          {filtered.length === 0 && (
+          {news.length === 0 ? (
+            <ContentEmpty icon={Newspaper} title="هنوز اطلاعیه‌ای منتشر نشده" body="قابلیت‌های جدید و اطلاعیه‌های سرویس این‌جا منتشر می‌شود. تا آن موقع، از این‌جا شروع کنید:" />
+          ) : filtered.length === 0 && (
             <div className="py-24 text-center text-gray-400 dark:text-gray-500">
               خبری در این دسته یافت نشد.
             </div>

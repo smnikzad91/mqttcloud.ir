@@ -7,6 +7,7 @@ import { FileText } from "lucide-react";
 import { Reveal } from "@/components/public/shared/Reveal";
 import { Stagger, StaggerItem } from "@/components/public/shared/Stagger";
 import { AmbientGlow } from "@/components/public/shared/AmbientGlow";
+import { ContentEmpty } from "@/components/public/shared/ContentEmpty";
 import { blogCategoryConfig, stripHash, formatDateFa } from "@/components/public/shared/contentTaxonomy";
 
 export interface BlogPostSummary {
@@ -65,7 +66,7 @@ export default function BlogPageClient({ posts }: Props) {
         </Reveal>
 
         {/* ─── Category filters ─── */}
-        <Reveal delay={0.1} className="mt-8 flex flex-wrap justify-center gap-2">
+        {posts.length > 0 && <Reveal delay={0.1} className="mt-8 flex flex-wrap justify-center gap-2">
           {allCategories.map((cat) => {
             const cfg = cat !== "همه" ? blogCategoryConfig[cat] : null;
             const active = activeCategory === cat;
@@ -89,12 +90,14 @@ export default function BlogPageClient({ posts }: Props) {
               </button>
             );
           })}
-        </Reveal>
+        </Reveal>}
 
         {/* ─── Content ─── */}
         <section className="mt-12">
 
-          {filtered.length === 0 && (
+          {posts.length === 0 ? (
+            <ContentEmpty icon={FileText} title="اولین مقاله‌ها در راه است" body="در حال نوشتن راهنماهای اتصال دستگاه‌ها و بهترین شیوه‌های MQTT هستیم. تا آن موقع، از این‌جا شروع کنید:" />
+          ) : filtered.length === 0 && (
             <div className="py-24 text-center text-gray-400 dark:text-gray-500">مقاله‌ای در این دسته یافت نشد.</div>
           )}
 
