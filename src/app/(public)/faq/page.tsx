@@ -45,7 +45,7 @@ export default async function FaqPage() {
   return (
     <>
       {faqJsonLd && <JsonLd data={faqJsonLd} />}
-      <FaqPageClient />
+      <FaqPageClient faqs={rawFaqs.map((f) => ({ id: String(f._id), question: f.question, answer: f.answer }))} />
     </>
   );
 }

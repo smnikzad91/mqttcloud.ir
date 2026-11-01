@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState } from "react";
 import { easeSignal } from "./motion";
 
@@ -59,21 +59,19 @@ export function Accordion({ items, variant = "default", className }: AccordionPr
                 </motion.svg>
               </span>
             </button>
-            <AnimatePresence initial={false}>
-              {open && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: easeSignal }}
-                  className="overflow-hidden"
-                >
-                  <p className={`text-sm leading-relaxed text-gray-500 dark:text-gray-400 ${variant === "compact" ? "px-5 pb-4" : "px-6 pb-5"}`}>
-                    {item.answer}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Always rendered, collapsed with CSS (like the home FAQ): an answer that only
+                mounts when clicked is invisible to crawlers and to in-page search. */}
+            <div
+              className="grid transition-[grid-template-rows,opacity] duration-300 ease-out"
+              style={{ gridTemplateRows: open ? "1fr" : "0fr", opacity: open ? 1 : 0 }}
+              aria-hidden={!open}
+            >
+              <div className="overflow-hidden">
+                <p className={`text-sm leading-relaxed text-gray-500 dark:text-gray-400 ${variant === "compact" ? "px-5 pb-4" : "px-6 pb-5"}`}>
+                  {item.answer}
+                </p>
+              </div>
+            </div>
           </div>
         );
       })}
