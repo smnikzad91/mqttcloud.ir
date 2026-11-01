@@ -7,12 +7,12 @@ import { CODE_SNIPPETS, DEMO_CLIENT, DEMO_USER, MQTT_PORT_TLS, SNIPPET_TABS, fa,
 import { CardHeader, SimButton, SpotlightCard, panelClass } from "./SpotlightCard";
 
 const HANDSHAKE = [
-  { fromClient: true, packet: "CONNECT", detail: `client_id: ${DEMO_CLIENT}`, latency: "۸ms" },
-  { fromClient: false, packet: "CONNACK", detail: "0x00 accepted", latency: "۱۲ms" },
-  { fromClient: true, packet: "SUBSCRIBE", detail: `${DEMO_USER}/sensors/#`, latency: "۱۴ms" },
-  { fromClient: false, packet: "SUBACK", detail: "granted QoS 1", latency: "۱۵ms" },
-  { fromClient: true, packet: "PUBLISH", detail: '{"c": 24.8}', latency: "۱۱ms" },
-  { fromClient: false, packet: "PUBACK", detail: "delivered ✓", latency: "۱۳ms" },
+  { fromClient: true, packet: "CONNECT", detail: `client_id: ${DEMO_CLIENT}` },
+  { fromClient: false, packet: "CONNACK", detail: "0x00 accepted" },
+  { fromClient: true, packet: "SUBSCRIBE", detail: `${DEMO_USER}/sensors/#` },
+  { fromClient: false, packet: "SUBACK", detail: "granted QoS 1" },
+  { fromClient: true, packet: "PUBLISH", detail: '{"c": 24.8}' },
+  { fromClient: false, packet: "PUBACK", detail: "delivered ✓" },
 ];
 
 /** Feature 6 (full width) — copy-paste client snippets that follow the broker's real rules, plus a replayable MQTT handshake. */
@@ -147,7 +147,6 @@ export function DeveloperCard() {
                     <span className="truncate font-bold">{s.packet}</span>
                     <span className="hidden truncate text-[11px] text-gray-400 2xsm:inline">{s.detail}</span>
                   </span>
-                  <span className="shrink-0 text-[11px] font-bold text-success-400">{s.latency}</span>
                 </li>
               );
             })}
