@@ -136,9 +136,9 @@ export default function OGImage() {
           }}
         >
           {[
-            { name: "Protocol", value: "MQTT 3.1.1", up: true },
-            { name: "Encryption", value: "TLS", up: true },
-            { name: "Browsers", value: "WebSocket", up: true },
+            { name: "Protocol", value: "MQTT 3.1.1" },
+            { name: "Encryption", value: "TLS" },
+            { name: "Browsers", value: "WebSocket" },
           ].map((ind) => (
             <div
               key={ind.name}
@@ -155,18 +155,7 @@ export default function OGImage() {
             >
               <span style={{ fontSize: 17, fontWeight: 700, color: "rgba(255,255,255,0.4)" }}>{ind.name}</span>
               <span style={{ fontSize: 20, fontWeight: 800, color: "rgba(255,255,255,0.85)" }}>{ind.value}</span>
-              <span
-                style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: ind.up ? "#4ade80" : "#f87171",
-                  background: ind.up ? "rgba(74,222,128,0.15)" : "rgba(248,113,113,0.15)",
-                  borderRadius: 8,
-                  padding: "3px 8px",
-                }}
-              >
-                {ind.up ? "✓" : "✗"}
-              </span>
+              <span style={{ width: 10, height: 10, borderRadius: 999, background: "#4ade80" }} />
             </div>
           ))}
         </div>
