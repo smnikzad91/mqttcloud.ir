@@ -32,7 +32,7 @@ export async function serveUpload(baseDir: string, segments: string[]): Promise<
       headers: {
         "Content-Type": type,
         "Content-Length": String(body.length),
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": "public, max-age=0",  // same as next start's public/ files, so a deleted upload isn't kept by the CDN
         "X-Content-Type-Options": "nosniff",
       },
     });
