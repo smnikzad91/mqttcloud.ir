@@ -14,15 +14,17 @@ import { useLanguage } from "@/context/LanguageContext";
 import ChipInput from "@/components/dashboard/ChipInput";
 import { Switch } from "@/components/dashboard/OrderedList";
 import { PageHeader, Panel, Field, SkeletonRows, StatusBadge, inputClass, buttonClass, cn } from "@/components/dashboard/ui";
+import { SeoCounter, GooglePreview } from "@/components/admin/SeoParts";
 import { ImageSlot, slugify, useUnsavedGuard } from "./EditorParts";
 
 type Section = { heading: string; body: string; image: string };
 type PostForm = {
   slug: string; category: string; title: string; excerpt: string; readTime: string;
   published: boolean; highlight: boolean; hashtags: string[]; coverImage: string; sections: Section[];
+  seoTitle: string; seoDescription: string; seoKeywords: string[];
 };
 
-const EMPTY: PostForm = { slug: "", category: "", title: "", excerpt: "", readTime: "", published: false, highlight: false, hashtags: [], coverImage: "", sections: [{ heading: "", body: "", image: "" }] };
+const EMPTY: PostForm = { slug: "", category: "", title: "", excerpt: "", readTime: "", published: false, highlight: false, hashtags: [], coverImage: "", sections: [{ heading: "", body: "", image: "" }], seoTitle: "", seoDescription: "", seoKeywords: [] };
 
 export default function BlogPostEditor({ id }: { id?: string }) {
   const t = useT();
@@ -49,6 +51,7 @@ export default function BlogPostEditor({ id }: { id?: string }) {
         slug: d.slug ?? "", category: (d.category || "").replace(/^#/, ""), title: d.title ?? "", excerpt: d.excerpt ?? "",
         readTime: d.readTime ?? "", published: !!d.published, highlight: !!d.highlight, hashtags: d.hashtags ?? [], coverImage: d.coverImage ?? "",
         sections: (d.sections ?? []).map((s: Partial<Section>) => ({ heading: s.heading ?? "", body: s.body ?? "", image: s.image ?? "" })),
+        seoTitle: d.seoTitle ?? "", seoDescription: d.seoDescription ?? "", seoKeywords: d.seoKeywords ?? [],
       };
       if (!loaded.sections.length) loaded.sections = [{ heading: "", body: "", image: "" }];
       setInitial(loaded);
@@ -67,6 +70,12 @@ export default function BlogPostEditor({ id }: { id?: string }) {
     [next[i], next[i + dir]] = [next[i + dir], next[i]];
     set("sections", next);
   };
+
+  // What search engines will show: the SEO overrides, else the post's own title and excerpt.
+  // The page adds " | mqttcloud.ir" unless the title already names the brand (blog/[slug]/page.tsx).
+  const searchTitle = (form.seoTitle.trim() || form.title.trim());
+  const searchFullTitle = searchTitle && !/mqttcloud/i.test(searchTitle) ? `${searchTitle} | mqttcloud.ir` : searchTitle;
+  const searchDescription = form.seoDescription.trim() || form.excerpt.trim();
 
   // Publishing (new + published, or draft → published) posts to Telegram.
   const willNotify = form.published && (isNew || !initial?.published);
@@ -172,6 +181,23 @@ export default function BlogPostEditor({ id }: { id?: string }) {
           </Panel>
           <Panel title={t("blogCoverImage")} description={t("edCoverHint")}>
             <ImageSlot value={form.coverImage} onChange={(url) => set("coverImage", url)} folder="blogs" />
+          </Panel>
+          <Panel title={t("edSeo")} description={t("edSeoHint")}>
+            <div className="space-y-4">
+              <Field label={<span className="flex w-full justify-between gap-2">{t("edSeoTitle")}<SeoCounter n={searchFullTitle.length} min={30} max={60} /></span>} hint={t("seoSuffixNote")} htmlFor="bp-seo-title">
+                <input id="bp-seo-title" dir="auto" maxLength={120} value={form.seoTitle} onChange={(e) => set("seoTitle", e.target.value)} placeholder={form.title} className={inputClass} />
+              </Field>
+              <Field label={<span className="flex w-full justify-between gap-2">{t("edSeoDescription")}<SeoCounter n={searchDescription.length} min={110} max={160} /></span>} hint={t("seoDescTip")} htmlFor="bp-seo-desc">
+                <textarea id="bp-seo-desc" dir="auto" rows={4} maxLength={320} value={form.seoDescription} onChange={(e) => set("seoDescription", e.target.value)} placeholder={form.excerpt} className={cn(inputClass, "h-auto resize-y py-3")} />
+              </Field>
+              <Field label={t("edSeoKeywords")} hint={t("edSeoKeywordsHint")} htmlFor="bp-seo-kw">
+                <ChipInput id="bp-seo-kw" value={form.seoKeywords} onChange={(v) => set("seoKeywords", v)} placeholder={t("seoFieldKeywordsPlaceholder")} />
+              </Field>
+              <div>
+                <p className="mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t("seoGooglePreview")}</p>
+                <GooglePreview path={`/blog/${form.slug || "…"}`} title={searchFullTitle} description={searchDescription} />
+              </div>
+            </div>
           </Panel>
         </div>
       </div>

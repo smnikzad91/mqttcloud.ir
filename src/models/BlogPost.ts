@@ -17,6 +17,10 @@ export interface IBlogPost extends Document {
   sections: IBlogSection[];
   highlight: boolean;
   published: boolean;
+  /** Optional search overrides; empty means use title / excerpt / hashtags. */
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +46,9 @@ const BlogPostSchema = new Schema<IBlogPost>(
     sections:  [SectionSchema],
     highlight: { type: Boolean, default: false },
     published: { type: Boolean, default: true, index: true },
+    seoTitle:       { type: String, trim: true, default: "" },
+    seoDescription: { type: String, trim: true, default: "" },
+    seoKeywords:    [{ type: String, trim: true }],
   },
   { timestamps: true }
 );

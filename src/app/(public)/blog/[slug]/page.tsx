@@ -27,17 +27,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ogImage = post.coverImage
     ? { url: absolute(post.coverImage), alt: post.title }
     : { url: "/opengraph-image", width: 1200, height: 630, alt: post.title };
-  const keywords = [post.category, ...(post.hashtags ?? [])].filter(Boolean);
+  // Admin SEO overrides (blog editor → SEO) win; otherwise the post's own title, excerpt and tags.
+  const seoTitle = post.seoTitle?.trim() || post.title;
+  const description = post.seoDescription?.trim() || post.excerpt;
+  const keywords = post.seoKeywords?.length ? post.seoKeywords : [post.category, ...(post.hashtags ?? [])].filter(Boolean);
   const publishedTime = post.createdAt ? (post.createdAt as Date).toISOString() : undefined;
 
   return {
-    title: pageTitle(post.title),
-    description: post.excerpt,
+    title: pageTitle(seoTitle),
+    description,
     keywords,
     alternates: { canonical: url },
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
+      title: seoTitle,
+      description,
       url,
       type: "article",
       publishedTime,
@@ -48,8 +51,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
-      title: post.title,
-      description: post.excerpt,
+      title: seoTitle,
+      description,
       images: [ogImage.url],
     },
   };

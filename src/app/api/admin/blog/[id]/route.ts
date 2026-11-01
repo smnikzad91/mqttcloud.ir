@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 import { notifyBlog } from "@/lib/telegram";
+import { parseBlogSeo } from "@/lib/seoFields";
 
 interface Params { params: Promise<{ id: string }> }
 
@@ -29,6 +30,9 @@ export async function GET(_req: NextRequest, { params }: Params) {
     sections:    post.sections,
     highlight:   post.highlight,
     published:   post.published,
+    seoTitle:       post.seoTitle ?? "",
+    seoDescription: post.seoDescription ?? "",
+    seoKeywords:    post.seoKeywords ?? [],
   });
 }
 
@@ -40,6 +44,9 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
   const { id } = await params;
   const body = await req.json();
+  const seo = parseBlogSeo(body);
+  if ("error" in seo) return NextResponse.json({ error: seo.error }, { status: 400 });
+  Object.assign(body, seo.values);
 
   await connectDB();
   if (body.highlight) await BlogPost.updateMany({ _id: { $ne: id } }, { $set: { highlight: false } });

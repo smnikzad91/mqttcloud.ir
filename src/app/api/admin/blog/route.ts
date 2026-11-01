@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 import { notifyBlog } from "@/lib/telegram";
+import { parseBlogSeo } from "@/lib/seoFields";
 
 export async function GET() {
   const session = await auth();
@@ -44,6 +45,8 @@ export async function POST(req: NextRequest) {
   if (!slug || !category || !title || !excerpt || !readTime) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
+  const seo = parseBlogSeo(body);
+  if ("error" in seo) return NextResponse.json({ error: seo.error }, { status: 400 });
 
   await connectDB();
 
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (highlight) await BlogPost.updateMany({}, { $set: { highlight: false } });
-  const post = await BlogPost.create({ slug, category, title, excerpt, readTime, coverImage: coverImage || undefined, hashtags: hashtags ?? [], sections: sections ?? [], highlight: highlight ?? false, published: published ?? true });
+  const post = await BlogPost.create({ slug, category, title, excerpt, readTime, coverImage: coverImage || undefined, hashtags: hashtags ?? [], sections: sections ?? [], highlight: highlight ?? false, published: published ?? true, ...seo.values });
 
   if (post.published) {
     void notifyBlog({ slug: post.slug, title: post.title, category: String(post.category), excerpt: post.excerpt, hashtags: post.hashtags ?? [], coverImage: post.coverImage ?? undefined });

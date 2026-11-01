@@ -3,13 +3,9 @@ import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
 import PageSeo from "@/models/PageSeo";
 import { PAGE_SEO_DEFAULTS, SEO_PAGES, TITLE_SUFFIX, isSeoPage } from "@/lib/pageSeo";
+import { cleanKeywords, seoFieldsError } from "@/lib/seoFields";
 
 // Per-page search metadata for the public site (src/lib/pageSeo.ts).
-
-const TITLE_MAX = 120;
-const DESCRIPTION_MAX = 320;
-const KEYWORDS_MAX = 30;
-const KEYWORD_MAX = 60;
 
 async function requireAdmin() {
   const session = await auth();
@@ -51,15 +47,12 @@ export async function PUT(req: Request) {
   const page = String(body.page ?? "");
   const title = String(body.title ?? "").trim();
   const description = String(body.description ?? "").trim();
-  const keywords: string[] = Array.isArray(body.keywords)
-    ? [...new Set(body.keywords.map((k: unknown) => String(k).trim()).filter(Boolean))] as string[]
-    : [];
+  const keywords = cleanKeywords(body.keywords);
 
   if (!isSeoPage(page)) return NextResponse.json({ error: "Unknown page." }, { status: 400 });
-  if (!title || title.length > TITLE_MAX) return NextResponse.json({ error: `Title is required (max ${TITLE_MAX} characters).` }, { status: 400 });
-  if (!description || description.length > DESCRIPTION_MAX) return NextResponse.json({ error: `Description is required (max ${DESCRIPTION_MAX} characters).` }, { status: 400 });
-  if (keywords.length > KEYWORDS_MAX || keywords.some((k) => k.length > KEYWORD_MAX))
-    return NextResponse.json({ error: `At most ${KEYWORDS_MAX} keywords, each up to ${KEYWORD_MAX} characters.` }, { status: 400 });
+  if (!title || !description) return NextResponse.json({ error: "Title and description are required." }, { status: 400 });
+  const invalid = seoFieldsError(title, description, keywords);
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
 
   await connectDB();
   const saved = await PageSeo.findOneAndUpdate(
