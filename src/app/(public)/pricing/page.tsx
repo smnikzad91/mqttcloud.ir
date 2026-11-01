@@ -2,6 +2,8 @@ import { Metadata } from "next";
 import PricingPageClient from "@/components/public/PricingPageClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { PLAN_DEFS } from "@/lib/plans";
+import { connectDB } from "@/lib/mongodb";
+import Faq from "@/models/Faq";
 
 export const metadata: Metadata = {
   title: "تعرفه بروکر MQTT؛ پلن رایگان و پرداخت ریالی",
@@ -50,11 +52,16 @@ const pricingJsonLd = {
   ],
 };
 
-export default function PricingPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PricingPage() {
+  await connectDB();
+  const rawFaqs = await Faq.find({ active: true }).sort({ order: 1, createdAt: -1 }).select("question answer").lean();
+  const faqs = rawFaqs.map((f) => ({ id: String(f._id), question: f.question, answer: f.answer }));
   return (
     <>
       <JsonLd data={pricingJsonLd} />
-      <PricingPageClient />
+      <PricingPageClient faqs={faqs} />
     </>
   );
 }

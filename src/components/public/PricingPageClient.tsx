@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Check, CreditCard, Headset, RefreshCw, ShieldCheck } from "lucide-react";
 import { Reveal } from "@/components/public/shared/Reveal";
-import { Stagger, StaggerItem } from "@/components/public/shared/Stagger";
+import { HeroRise } from "@/components/public/shared/HeroRise";
 import { SectionHeading } from "@/components/public/shared/SectionHeading";
 import { Container } from "@/components/public/shared/Container";
 import { Button } from "@/components/public/shared/Button";
@@ -123,24 +123,16 @@ function ctaHref(planId: PlanId, loggedIn: boolean): string {
   return loggedIn ? "/dashboard/subscription" : "/signup";
 }
 
-export default function PricingPageClient() {
+// FAQs come from the server (pricing/page.tsx) so they are in the HTML crawlers read.
+export default function PricingPageClient({ faqs }: { faqs: AccordionItemData[] }) {
   const { data: session } = useSession();
   const loggedIn = !!session?.user;
-  const [faqs, setFaqs] = useState<AccordionItemData[]>([]);
   // Signed-in visitors see which card is their current plan.
   const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null);
   useEffect(() => {
     if (!loggedIn) return;
     fetch("/api/user/plan").then((r) => (r.ok ? r.json() : null)).then((d) => d?.plan && setCurrentPlan(d.plan)).catch(() => {});
   }, [loggedIn]);
-
-  useEffect(() => {
-    fetch("/api/public/faqs").then((r) => r.json()).then((data) => {
-      if (Array.isArray(data)) {
-        setFaqs(data.map((f) => ({ id: f._id, question: f.question, answer: f.answer })));
-      }
-    }).catch(() => {});
-  }, []);
 
   return (
     <div className="relative overflow-hidden">
@@ -152,27 +144,27 @@ export default function PricingPageClient() {
       <Container className="relative pb-24 pt-20">
 
         {/* ─── Header ─── */}
-        <Reveal className="text-center">
+        <HeroRise className="text-center">
           <span className="inline-block rounded-full border border-white/60 bg-white/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-600 shadow-theme-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-brand-400">
             شفاف، بدون هزینه پنهان
           </span>
           <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
-            تعرفه‌های ساده و شفاف
+            تعرفه بروکر MQTT؛ ساده و شفاف
           </h1>
           <p className="mt-4 text-lg text-gray-500 dark:text-gray-400">
             هر زمان که خواستید ارتقا یا کاهش دهید. بدون قرارداد بلندمدت.
           </p>
-        </Reveal>
+        </HeroRise>
 
         {/* ─── Plans ─── */}
-        <Stagger className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-start" stagger={0.1}>
-          {plans.map((plan) => {
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:items-start">
+          {plans.map((plan, index) => {
             const isFree = plan.id === "free";
             const isCustom = plan.id === "enterprise";
             const isCurrent = currentPlan === plan.id;
             return (
-              <StaggerItem
-                key={plan.id}
+              <HeroRise key={plan.id} delay={0.1 + index * 0.1}>
+              <div
                 className={`relative flex flex-col overflow-hidden rounded-2xl border-t-4 ${plan.accent} ${
                   plan.highlight
                     ? "border border-brand-500 bg-gradient-to-br from-brand-500 to-theme-purple-500 shadow-2xl shadow-brand-500/25 lg:-translate-y-5"
@@ -247,10 +239,11 @@ export default function PricingPageClient() {
                     {isCurrent ? "پلن فعلی شما · مدیریت اشتراک" : plan.cta}
                   </Button>
                 </div>
-              </StaggerItem>
+              </div>
+              </HeroRise>
             );
           })}
-        </Stagger>
+        </div>
 
         <Reveal delay={0.1} className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
           قیمت‌ها به تومان و برای ۳۰ روز است. پرداخت با همه کارت‌های بانکی از طریق درگاه nodepass انجام می‌شود و پلن بلافاصله فعال می‌شود.
