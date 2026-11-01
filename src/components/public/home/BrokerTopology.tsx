@@ -22,7 +22,6 @@ interface DeviceNode {
 interface PacketLog {
   topic: string;
   payload: string;
-  latency: string;
   status: string;
 }
 
@@ -55,7 +54,6 @@ export function BrokerTopology({ forceMotion = false }: { forceMotion?: boolean 
   const [log, setLog] = useState<PacketLog>({
     topic: INITIAL_NODES[0].topic,
     payload: INITIAL_NODES[0].payload,
-    latency: "۱۸ms",
     status: "شبیه‌سازی",
   });
 
@@ -67,7 +65,6 @@ export function BrokerTopology({ forceMotion = false }: { forceMotion?: boolean 
       setLog({
         topic: node.topic,
         payload: node.payload,
-        latency: `${fa(Math.floor(14 + Math.random() * 24))}ms`,
         status: "پیام دریافت شد",
       });
     },
@@ -85,7 +82,6 @@ export function BrokerTopology({ forceMotion = false }: { forceMotion?: boolean 
     setLog({
       topic: node.topic,
       payload: nextOnline ? node.payload : '{"event":"DISCONNECTED"}',
-      latency: nextOnline ? "۱۲ms" : "—",
       status: nextOnline ? "متصل شد (CONNACK)" : "قطع اتصال",
     });
   }
@@ -97,7 +93,6 @@ export function BrokerTopology({ forceMotion = false }: { forceMotion?: boolean 
     setLog({
       topic: node.topic,
       payload: `{"seq":${burst + 101},"val":${value}}`,
-      latency: "۱۱ms",
       status: node.online ? "پکت تست منتشر شد ✓" : "دستگاه آفلاین است",
     });
   }
@@ -271,7 +266,7 @@ export function BrokerTopology({ forceMotion = false }: { forceMotion?: boolean 
             آخرین پکت
           </span>
           <span className="font-bold text-success-400">
-            {log.status} · <span dir="ltr">{log.latency}</span>
+            {log.status}
           </span>
         </div>
         <div dir="ltr" className="flex flex-col gap-1 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-2 font-mono-signal text-[11px] sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:text-xs">
