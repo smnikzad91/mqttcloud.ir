@@ -7,7 +7,8 @@ import { Search, LifeBuoy, MessageCircle } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
 import { getJson } from "@/lib/getJson";
-import DataGrid, { DateTimeCell, StatusCell } from "@/components/dashboard/DataGrid";
+import DataGrid, { StatusCell } from "@/components/dashboard/DataGrid";
+import { OwnerCell, RelativeCell, AgeCell, fromControl } from "@/components/admin/AdminParts";
 import { useTicketStatusLabels } from "@/components/dashboard/TicketThread";
 import { PageHeader, Panel, EmptyState, SkeletonRows, FilterPills, inputClass, cn } from "@/components/dashboard/ui";
 
@@ -33,15 +34,6 @@ function SubjectCell({ data }: ICellRendererParams<Ticket>) {
     </div>
   );
 }
-function UserCell({ value }: { value: Ticket["user"] }) {
-  if (!value) return <span className="text-gray-400">—</span>;
-  return (
-    <div className="flex h-full flex-col justify-center leading-tight">
-      <span className="truncate text-sm text-gray-900 dark:text-white">{value.name || "—"}</span>
-      <span dir="ltr" className="truncate text-start text-xs text-gray-500 dark:text-gray-400">{value.email}</span>
-    </div>
-  );
-}
 function RepliesCell({ value }: { value: number }) {
   return <span className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400"><MessageCircle className="h-3.5 w-3.5" />{value}</span>;
 }
@@ -64,18 +56,24 @@ export default function AdminTicketsPage() {
   }, []);
 
   const q = query.trim().toLowerCase();
-  const rows = useMemo(() => (tickets ?? []).filter((x) =>
-    (filter === "all" || x.status === filter) &&
-    (!q || x.subject.toLowerCase().includes(q) || (x.user?.name ?? "").toLowerCase().includes(q) || (x.user?.email ?? "").toLowerCase().includes(q))), [tickets, filter, q]);
+  const rows = useMemo(() => {
+    const list = (tickets ?? []).filter((x) =>
+      (filter === "all" || x.status === filter) &&
+      (!q || x.subject.toLowerCase().includes(q) || (x.user?.name ?? "").toLowerCase().includes(q) || (x.user?.email ?? "").toLowerCase().includes(q)));
+    // The reply queue is worked oldest-first; everything else newest-first.
+    return filter === "open" ? list.sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)) : list;
+  }, [tickets, filter, q]);
   const count = (f: Filter) => (tickets ?? []).filter((x) => f === "all" || x.status === f).length;
 
   const columns = useMemo<ColDef<Ticket>[]>(() => [
     { field: "subject", headerName: t("ticketSubject"), flex: 2, minWidth: 240, cellRenderer: SubjectCell },
-    { field: "user", headerName: t("ticketFrom"), flex: 1.2, minWidth: 190, sortable: false, cellRenderer: UserCell },
+    { field: "user", headerName: t("ticketFrom"), flex: 1.2, minWidth: 190, sortable: false, cellRenderer: OwnerCell },
     { field: "status", headerName: t("finStatus"), width: 140, cellRenderer: StatusCell },
     { field: "replyCount", headerName: t("ticketReplyCount"), width: 100, cellRenderer: RepliesCell },
-    { field: "updatedAt", headerName: t("tkUpdated"), width: 180, sort: "desc", cellRenderer: DateTimeCell },
-  ], [t]);
+    filter === "open"
+      ? { field: "updatedAt", headerName: t("frWaiting"), width: 160, cellRenderer: AgeCell }
+      : { field: "updatedAt", headerName: t("tkUpdated"), width: 160, cellRenderer: RelativeCell },
+  ], [t, filter]);
   const context = useMemo(() => ({ isRTL, statusLabels }), [isRTL, statusLabels]);
 
   return (
@@ -101,7 +99,7 @@ export default function AdminTicketsPage() {
         {tickets === null ? <div className="p-5"><SkeletonRows rows={5} /></div>
           : failed ? <p className="p-5 text-sm text-error-600 dark:text-error-400">{t("ovLoadFailed")}</p>
           : rows.length === 0 ? <EmptyState icon={<LifeBuoy className="h-6 w-6" />} title={filter === "open" ? t("aovQueueEmpty") : t("noTickets")} />
-          : <DataGrid rows={rows} columns={columns} context={context} rowHeight={60} rowClass="cursor-pointer" onRowClicked={(e) => e.data && router.push(`/admin/tickets/${e.data.id}`)} />}
+          : <DataGrid rows={rows} columns={columns} context={context} rowHeight={60} rowClass="cursor-pointer" onRowClicked={(e) => e.data && !fromControl(e.event) && router.push(`/admin/tickets/${e.data.id}`)} />}
       </Panel>
     </div>
   );

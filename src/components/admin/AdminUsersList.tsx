@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -10,6 +11,7 @@ import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
 import { getJson } from "@/lib/getJson";
 import DataGrid, { DateCell } from "@/components/dashboard/DataGrid";
+import { RelTime, readParam, fromControl } from "@/components/admin/AdminParts";
 import {
   PageHeader, Panel, StatTile, StatusBadge, EmptyState, SkeletonRows, FilterPills, Dialog, ConfirmDialog, Drawer, Field,
   inputClass, buttonClass, cn, useFormatNumber, type BadgeTone,
@@ -211,6 +213,22 @@ export default function AdminUsersList() {
   }, [related]);
   const mine = <T extends { user: Owner }>(list: T[] | undefined) => (list ?? []).filter((x) => detail && x.user?.email === detail.email);
 
+  // Deep link from other admin pages: /admin/users?q=<email>&open=1 filters to
+  // that account and, when it's a single match, opens its drawer.
+  const [deepLinked, setDeepLinked] = useState(false);
+  useEffect(() => {
+    if (deepLinked || !users) return;
+    const v = readParam("q");
+    queueMicrotask(() => {
+      setDeepLinked(true);
+      if (!v) return;
+      setQuery(v);
+      const hit = users.filter((u) => u.email.toLowerCase() === v.toLowerCase());
+      if (readParam("open") && hit.length === 1) openDetail(hit[0]);
+      window.history.replaceState(null, "", "/admin/users");
+    });
+  }, [users, deepLinked, openDetail]);
+
   const columns = useMemo<ColDef<UserRow>[]>(() => [
     { field: "firstName", headerName: t("colUser"), flex: 2, minWidth: 240, cellRenderer: NameCell },
     { field: "role", headerName: t("colRole"), width: 110, cellRenderer: RoleCell },
@@ -257,7 +275,7 @@ export default function AdminUsersList() {
         {users === null ? <div className="p-5"><SkeletonRows rows={6} /></div>
           : failed ? <p className="p-5 text-sm text-error-600 dark:text-error-400">{t("ovLoadFailed")}</p>
           : rows.length === 0 ? <EmptyState icon={<Users className="h-6 w-6" />} title={users.length ? t("noUsersFound") : t("userEmpty")} />
-          : <DataGrid rows={rows} columns={columns} context={context} rowHeight={60} />}
+          : <DataGrid rows={rows} columns={columns} context={context} rowHeight={60} rowClass="cursor-pointer" onRowClicked={(e) => e.data && !fromControl(e.event) && openDetail(e.data)} />}
       </Panel>
 
       {/* Edit */}
@@ -337,14 +355,14 @@ export default function AdminUsersList() {
               <div><dt className="text-xs text-gray-500 dark:text-gray-400">{t("colPlan")}</dt><dd className="mt-1"><StatusBadge tone={PLAN_TONE[detail.plan]} label={planLabels[detail.plan]} /></dd></div>
               <div><dt className="text-xs text-gray-500 dark:text-gray-400">{t("colWallet")}</dt><dd className="mt-1 font-semibold text-gray-900 dark:text-white">{fmt(detail.walletBalance ?? 0)} {t("walletUnit")}</dd></div>
               <div><dt className="text-xs text-gray-500 dark:text-gray-400">{t("colPhone")}</dt><dd dir="ltr" className="mt-1 text-start font-mono-signal text-gray-800 dark:text-gray-200">{detail.phone || "—"}</dd></div>
-              <div><dt className="text-xs text-gray-500 dark:text-gray-400">{t("colJoined")}</dt><dd className="mt-1 text-gray-800 dark:text-gray-200">{new Date(detail.createdAt).toLocaleDateString(isRTL ? "fa-IR" : "en-US", { dateStyle: "medium" })}</dd></div>
+              <div><dt className="text-xs text-gray-500 dark:text-gray-400">{t("colJoined")}</dt><dd className="mt-1 text-gray-800 dark:text-gray-200"><RelTime iso={detail.createdAt} /></dd></div>
             </dl>
             {!related ? <SkeletonRows rows={4} /> : (
               <>
-                <RelatedList title={t("auCredentials")} empty={t("auNone")} items={mine(related.creds).map((c) => ({ key: c.id, main: <span dir="ltr" className="font-mono-signal">{c.username}</span>, side: <StatusBadge status={c.isActive ? "active" : "suspended"} label={c.isActive ? t("mqttActive") : t("mqttSuspended")} /> }))} />
-                <RelatedList title={t("auDevices")} empty={t("auNone")} items={mine(related.clients).map((c) => ({ key: c.id, main: <span dir="ltr" className="font-mono-signal">{c.clientName}</span>, side: <StatusBadge status={c.isOnline ? "online" : "offline"} label={c.isOnline ? t("mqttOnline") : t("mqttOffline")} /> }))} />
-                <RelatedList title={t("auDeposits")} empty={t("auNone")} items={mine(related.deposits).slice(0, 5).map((d) => ({ key: d.id, main: <>{fmt(d.amount)} {t("walletUnit")}</>, side: <StatusBadge status={d.status} label={t(d.status === "approved" ? "statusApproved" : d.status === "rejected" ? "statusRejected" : "statusPending")} /> }))} />
-                <RelatedList title={t("auTickets")} empty={t("auNone")} items={mine(related.tickets).slice(0, 5).map((x) => ({ key: x.id, main: <a href={`/admin/tickets/${x.id}`} dir="auto" className="hover:underline">{x.subject}</a>, side: <StatusBadge status={x.status} label={t(x.status === "open" ? "statusOpen" : x.status === "answered" ? "statusAnswered" : "statusClosed")} /> }))} />
+                <RelatedList title={t("auCredentials")} empty={t("auNone")} items={mine(related.creds).map((c) => ({ key: c.id, main: <Link href={`/admin/mqtt?q=${encodeURIComponent(c.username)}`} dir="ltr" className="font-mono-signal hover:underline">{c.username}</Link>, side: <StatusBadge status={c.isActive ? "active" : "suspended"} label={c.isActive ? t("mqttActive") : t("mqttSuspended")} /> }))} />
+                <RelatedList title={t("auDevices")} empty={t("auNone")} items={mine(related.clients).map((c) => ({ key: c.id, main: <Link href={`/admin/mqtt?q=${encodeURIComponent(c.clientName)}`} dir="ltr" className="font-mono-signal hover:underline">{c.clientName}</Link>, side: <StatusBadge status={c.isOnline ? "online" : "offline"} label={c.isOnline ? t("mqttOnline") : t("mqttOffline")} /> }))} />
+                <RelatedList title={t("auDeposits")} empty={t("auNone")} items={mine(related.deposits).slice(0, 5).map((d) => ({ key: d.id, main: <Link href={`/admin/finance?review=${d.id}`} className="hover:underline">{fmt(d.amount)} {t("walletUnit")} <span className="text-xs text-gray-400">· <RelTime iso={d.createdAt} /></span></Link>, side: <StatusBadge status={d.status} label={t(d.status === "approved" ? "statusApproved" : d.status === "rejected" ? "statusRejected" : "statusPending")} /> }))} />
+                <RelatedList title={t("auTickets")} empty={t("auNone")} items={mine(related.tickets).slice(0, 5).map((x) => ({ key: x.id, main: <Link href={`/admin/tickets/${x.id}`} dir="auto" className="hover:underline">{x.subject}</Link>, side: <StatusBadge status={x.status} label={t(x.status === "open" ? "statusOpen" : x.status === "answered" ? "statusAnswered" : "statusClosed")} /> }))} />
               </>
             )}
           </div>

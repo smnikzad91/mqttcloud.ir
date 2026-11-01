@@ -9,6 +9,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getJson } from "@/lib/getJson";
 import DataGrid, { DateCell, StatusCell } from "@/components/dashboard/DataGrid";
 import { PageHeader, Panel, EmptyState, SkeletonRows, FilterPills, Dialog, ConfirmDialog, StatusBadge, inputClass, buttonClass, cn } from "@/components/dashboard/ui";
+import { readParam } from "@/components/admin/AdminParts";
 
 type ContactStatus = "new" | "read" | "replied";
 type ContactRow = { id: string; name: string; email: string; subject: string; message: string; status: ContactStatus; createdAt: string };
@@ -65,6 +66,15 @@ export default function AdminContact() {
     setView(r);
     if (r.status === "new") setStatus(r.id, "read", true);
   }, [setStatus]);
+
+  // /admin/contact?open=<id> (from the overview) opens that message.
+  useEffect(() => {
+    const id = readParam("open");
+    const hit = id && rows?.find((r) => r.id === id);
+    if (!hit) return;
+    queueMicrotask(() => open(hit));
+    window.history.replaceState(null, "", "/admin/contact");
+  }, [rows, open]);
 
   const confirmDelete = async () => {
     if (!deleting) return;

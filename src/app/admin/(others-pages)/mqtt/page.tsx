@@ -3,15 +3,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { ColDef, ICellRendererParams } from "ag-grid-community";
-import { Search, Power, Trash2, KeyRound, Cpu, Activity } from "lucide-react";
+import { Search, Power, Trash2, KeyRound, Cpu, Activity, RefreshCw } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
 import { getJson } from "@/lib/getJson";
-import DataGrid, { MonoCell, DateCell, DateTimeCell, StatusCell } from "@/components/dashboard/DataGrid";
+import DataGrid, { MonoCell, DateCell, StatusCell } from "@/components/dashboard/DataGrid";
+import { OwnerCell, RelativeCell, RelTime, readParam, fromControl, type Owner } from "@/components/admin/AdminParts";
 import { PageHeader, Panel, StatTile, EmptyState, SkeletonRows, FilterPills, ConfirmDialog, StatusBadge, inputClass, cn, useFormatNumber } from "@/components/dashboard/ui";
 
-type Owner = { name: string; email: string } | null;
 type Credential = { id: string; username: string; isActive: boolean; maxConnection: number; createdAt: string; user: Owner };
+type CredRow = Credential & { devices: number; online: number };
 type Client = { id: string; clientName: string; username: string; isOnline: boolean; lastSeenAt: string | null; createdAt: string; user: Owner };
 type ActivityRow = { id: string; clientName: string; event: "connect" | "disconnect"; createdAt: string; user: Owner };
 type Tab = "credentials" | "clients" | "activity";
@@ -25,17 +26,17 @@ type Ctx = {
   onDelete: (c: Credential) => void;
 };
 
-function OwnerCell({ value }: { value: Owner }) {
-  if (!value) return <span className="text-gray-400">—</span>;
+function DevicesCell({ data, context }: ICellRendererParams<CredRow> & { context: Ctx }) {
+  if (!data) return null;
   return (
-    <div className="flex h-full flex-col justify-center leading-tight">
-      <span className="truncate text-sm text-gray-900 dark:text-white">{value.name || "—"}</span>
-      <span dir="ltr" className="truncate text-start text-xs text-gray-500 dark:text-gray-400">{value.email}</span>
+    <div className="flex h-full items-center gap-2 text-sm">
+      <span className="font-medium text-gray-900 dark:text-white" dir="ltr">{data.devices} <span className="font-normal text-gray-400">/ {data.maxConnection}</span></span>
+      {data.online > 0 && <StatusBadge status="online" label={`${data.online} ${context.t("amOnlineNow")}`} />}
     </div>
   );
 }
 
-function CredActions({ data, context }: ICellRendererParams<Credential> & { context: Ctx }) {
+function CredActions({ data, context }: ICellRendererParams<CredRow> & { context: Ctx }) {
   if (!data) return null;
   const btn = "flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white";
   const label = data.isActive ? context.t("suspend") : context.t("unsuspend");
@@ -61,12 +62,20 @@ export default function AdminMqttPage() {
   const [tab, setTab] = useState<Tab>("credentials");
   const [query, setQuery] = useState("");
 
-  const load = useCallback(() => {
-    getJson<Credential[]>("/api/admin/mqtt/credentials").then((d) => setCreds(d ?? []));
-    getJson<Client[]>("/api/admin/mqtt/clients").then((d) => setClients(d ?? []));
-    getJson<ActivityRow[]>("/api/admin/mqtt/activity").then((d) => setActivity(d ?? []));
-  }, []);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const load = useCallback(() => Promise.all([
+    getJson<Credential[]>("/api/admin/mqtt/credentials").then((d) => setCreds(d ?? [])),
+    getJson<Client[]>("/api/admin/mqtt/clients").then((d) => setClients(d ?? [])),
+    getJson<ActivityRow[]>("/api/admin/mqtt/activity").then((d) => setActivity(d ?? [])),
+  ]).then(() => setUpdatedAt(new Date().toISOString())), []);
   useEffect(() => { queueMicrotask(load); }, [load]);
+  // Deep link from other admin pages: /admin/mqtt?q=<username or email>.
+  useEffect(() => { const v = readParam("q"); if (v) queueMicrotask(() => setQuery(v)); }, []);
+  // Live-ish: refresh every 20s while the page is visible.
+  useEffect(() => {
+    const id = setInterval(() => { if (document.visibilityState === "visible") load(); }, 20_000);
+    return () => clearInterval(id);
+  }, [load]);
 
   // Suspend asks first (it locks a customer's devices out); re-activating doesn't.
   const [confirm, setConfirm] = useState<{ kind: "suspend" | "delete"; cred: Credential } | null>(null);
@@ -99,15 +108,27 @@ export default function AdminMqttPage() {
   };
 
   const q = query.trim().toLowerCase();
-  const credRows = useMemo(() => (creds ?? []).filter((c) => !q || c.username.toLowerCase().includes(q) || matchOwner(c.user, q)), [creds, q]);
+  const credRows = useMemo<CredRow[]>(() => {
+    // Registered/online devices per credential set, matched on owner + username.
+    const per = new Map<string, { devices: number; online: number }>();
+    for (const c of clients ?? []) {
+      const k = `${c.user?.email}|${c.username}`;
+      const v = per.get(k) ?? { devices: 0, online: 0 };
+      v.devices++; if (c.isOnline) v.online++;
+      per.set(k, v);
+    }
+    return (creds ?? [])
+      .filter((c) => !q || c.username.toLowerCase().includes(q) || matchOwner(c.user, q))
+      .map((c) => ({ ...c, ...(per.get(`${c.user?.email}|${c.username}`) ?? { devices: 0, online: 0 }) }));
+  }, [creds, clients, q]);
   const clientRows = useMemo(() => (clients ?? []).filter((c) => !q || c.clientName.toLowerCase().includes(q) || c.username.toLowerCase().includes(q) || matchOwner(c.user, q)), [clients, q]);
   const activityRows = useMemo(() => (activity ?? []).filter((a) => !q || a.clientName.toLowerCase().includes(q) || matchOwner(a.user, q)), [activity, q]);
 
-  const credCols = useMemo<ColDef<Credential>[]>(() => [
+  const credCols = useMemo<ColDef<CredRow>[]>(() => [
     { field: "user", headerName: t("amOwner"), flex: 1.4, minWidth: 200, sortable: false, cellRenderer: OwnerCell },
     { field: "username", headerName: t("mqttUsername"), flex: 1, minWidth: 150, cellRenderer: MonoCell },
     { field: "isActive", headerName: t("finStatus"), width: 130, cellRenderer: StatusCell, valueGetter: (p) => (p.data?.isActive ? "active" : "suspended") },
-    { field: "maxConnection", headerName: t("mqttMaxConnection"), width: 130 },
+    { field: "devices", headerName: t("amDevicesOfMax"), width: 190, cellRenderer: DevicesCell },
     { field: "createdAt", headerName: t("mqCreated"), width: 130, sort: "desc", cellRenderer: DateCell },
     { colId: "actions", headerName: "", width: 100, pinned: "right", sortable: false, cellRenderer: CredActions },
   ], [t]);
@@ -116,13 +137,13 @@ export default function AdminMqttPage() {
     { field: "clientName", headerName: t("mqttClientName"), flex: 1, minWidth: 150, cellRenderer: MonoCell },
     { field: "username", headerName: t("mqttUsername"), flex: 1, minWidth: 130, cellRenderer: MonoCell },
     { field: "isOnline", headerName: t("finStatus"), width: 120, cellRenderer: StatusCell, valueGetter: (p) => (p.data?.isOnline ? "online" : "offline"), sort: "desc" },
-    { field: "lastSeenAt", headerName: t("mqttLastSeen"), width: 180, cellRenderer: DateTimeCell },
+    { field: "lastSeenAt", headerName: t("mqttLastSeen"), width: 160, cellRenderer: RelativeCell },
   ], [t]);
   const activityCols = useMemo<ColDef<ActivityRow>[]>(() => [
     { field: "user", headerName: t("amOwner"), flex: 1.3, minWidth: 200, sortable: false, cellRenderer: OwnerCell },
     { field: "clientName", headerName: t("mqttClientName"), flex: 1, minWidth: 150, cellRenderer: MonoCell },
     { field: "event", headerName: t("colEvent"), width: 140, cellRenderer: StatusCell },
-    { field: "createdAt", headerName: t("colTime"), width: 180, sort: "desc", cellRenderer: DateTimeCell },
+    { field: "createdAt", headerName: t("colTime"), width: 160, sort: "desc", cellRenderer: RelativeCell },
   ], [t]);
 
   const context = useMemo<Ctx>(() => ({
@@ -158,14 +179,18 @@ export default function AdminMqttPage() {
               { key: "activity", label: t("mqttTabActivity"), count: activityRows.length },
             ]}
           />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            {updatedAt && <span className="hidden whitespace-nowrap text-xs text-gray-400 lg:inline">{t("msgUpdatedAt")} <RelTime iso={updatedAt} /></span>}
+            <button type="button" onClick={load} title={t("msgRefresh")} aria-label={t("msgRefresh")} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white"><RefreshCw className="h-4 w-4" /></button>
           <div className="relative w-full sm:w-72">
             <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden />
             <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("amSearch")} aria-label={t("amSearch")} className={cn(inputClass, "h-9 ps-9")} />
           </div>
+          </div>
         </div>
 
         {loading ? <div className="p-5"><SkeletonRows rows={6} /></div>
-          : tab === "credentials" ? (credRows.length ? <DataGrid rows={credRows} columns={credCols} context={context} rowHeight={60} /> : <EmptyState icon={<KeyRound className="h-6 w-6" />} title={t("noMqttCredentials")} />)
+          : tab === "credentials" ? (credRows.length ? <DataGrid rows={credRows} columns={credCols} context={context} rowHeight={60} rowClass="cursor-pointer" onRowClicked={(e) => { if (e.data && !fromControl(e.event)) { setTab("clients"); setQuery(e.data.username); } }} /> : <EmptyState icon={<KeyRound className="h-6 w-6" />} title={t("noMqttCredentials")} />)
           : tab === "clients" ? (clientRows.length ? <DataGrid rows={clientRows} columns={clientCols} context={context} rowHeight={60} /> : <EmptyState icon={<Cpu className="h-6 w-6" />} title={t("noMqttClients")} />)
           : (activityRows.length ? <DataGrid rows={activityRows} columns={activityCols} context={context} rowHeight={60} /> : <EmptyState icon={<Activity className="h-6 w-6" />} title={t("noMqttActivity")} />)}
       </Panel>
