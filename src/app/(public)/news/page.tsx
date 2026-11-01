@@ -1,29 +1,15 @@
 import { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageSeo";
 import NewsPageClient from "@/components/public/NewsPageClient";
 import { connectDB } from "@/lib/mongodb";
 import NewsItem from "@/models/NewsItem";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "اخبار",
-  description: "آخرین اخبار، به‌روزرسانی‌ها و اطلاعیه‌های mqttcloud.ir. از جدیدترین امکانات بروکر MQTT مطلع شوید.",
-  keywords: ["اخبار MQTT", "اخبار mqttcloud", "به‌روزرسانی محصول", "اطلاعیه"],
-  alternates: { canonical: "https://mqttcloud.ir/news" },
-  openGraph: {
-    title: "اخبار | mqttcloud.ir",
-    description: "آخرین اخبار و اطلاعیه‌های mqttcloud.ir.",
-    url: "https://mqttcloud.ir/news",
-    type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "اخبار mqttcloud.ir" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "اخبار | mqttcloud.ir",
-    description: "آخرین اخبار و اطلاعیه‌های mqttcloud.ir.",
-    images: ["/opengraph-image"],
-  },
-};
+// Title, description and keywords are editable in /admin/seo-settings (src/lib/pageSeo.ts).
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata("news");
+}
 
 export default async function NewsPage() {
   await connectDB();

@@ -1,29 +1,15 @@
 import { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageSeo";
 import PricingPageClient from "@/components/public/PricingPageClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { PLAN_DEFS } from "@/lib/plans";
 import { connectDB } from "@/lib/mongodb";
 import Faq from "@/models/Faq";
 
-export const metadata: Metadata = {
-  title: "تعرفه بروکر MQTT؛ پلن رایگان و پرداخت ریالی",
-  description: "قیمت سرور MQTT ابری به تومان: پلن رایگان با ۱ اکانت و ۲ دستگاه، پلن پایه ۴۹۹ هزار و استارتر ۹۹۹ هزار تومان برای ۳۰ روز. پرداخت با کارت‌های بانکی ایران، بدون پرداخت ارزی.",
-  keywords: ["قیمت بروکر MQTT", "تعرفه سرور MQTT", "سرور MQTT رایگان", "خرید سرور MQTT", "قیمت سرور اینترنت اشیا", "mqttcloud"],
-  alternates: { canonical: "https://mqttcloud.ir/pricing" },
-  openGraph: {
-    title: "تعرفه بروکر MQTT؛ پلن رایگان و پرداخت ریالی | mqttcloud.ir",
-    description: "پلن رایگان برای شروع، پلن‌های پایه و استارتر به تومان، پرداخت با کارت بانکی.",
-    url: "https://mqttcloud.ir/pricing",
-    type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "تعرفه بروکر MQTT؛ پلن رایگان و پرداخت ریالی" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "تعرفه بروکر MQTT؛ پلن رایگان و پرداخت ریالی | mqttcloud.ir",
-    description: "پلن رایگان برای شروع، پلن‌های پایه و استارتر به تومان، پرداخت با کارت بانکی.",
-    images: ["/opengraph-image"],
-  },
-};
+// Title, description and keywords are editable in /admin/seo-settings (src/lib/pageSeo.ts).
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata("pricing");
+}
 
 // Prices for search results, straight from PLAN_DEFS (what checkout actually
 // charges). Plans are priced in toman; schema.org wants ISO 4217, so IRR = toman × 10.

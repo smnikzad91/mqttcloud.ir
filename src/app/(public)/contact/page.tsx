@@ -1,26 +1,12 @@
 import { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageSeo";
 import ContactPageClient from "@/components/public/ContactPageClient";
 import { JsonLd } from "@/components/common/JsonLd";
 
-export const metadata: Metadata = {
-  title: "تماس با پشتیبانی",
-  description: "سوالی درباره بروکر MQTT، پلن‌ها یا اتصال دستگاه‌ها دارید؟ از طریق فرم تماس یا تیکت پشتیبانی، به زبان فارسی با تیم mqttcloud.ir در ارتباط باشید.",
-  keywords: ["پشتیبانی MQTT", "تماس با mqttcloud", "پشتیبانی اینترنت اشیا", "mqttcloud"],
-  alternates: { canonical: "https://mqttcloud.ir/contact" },
-  openGraph: {
-    title: "تماس با پشتیبانی | mqttcloud.ir",
-    description: "پشتیبانی فارسی برای بروکر MQTT، پلن‌ها و اتصال دستگاه‌ها.",
-    url: "https://mqttcloud.ir/contact",
-    type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "تماس با پشتیبانی" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "تماس با پشتیبانی | mqttcloud.ir",
-    description: "پشتیبانی فارسی برای بروکر MQTT، پلن‌ها و اتصال دستگاه‌ها.",
-    images: ["/opengraph-image"],
-  },
-};
+// Title, description and keywords are editable in /admin/seo-settings (src/lib/pageSeo.ts).
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata("contact");
+}
 
 const contactJsonLd = {
   "@context": "https://schema.org",

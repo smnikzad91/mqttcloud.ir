@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageSeo";
 import FaqPageClient from "@/components/public/FaqPageClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { connectDB } from "@/lib/mongodb";
@@ -6,25 +7,10 @@ import Faq from "@/models/Faq";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "سوالات متداول درباره بروکر MQTT",
-  description: "پاسخ سوال‌های رایج درباره mqttcloud.ir: آدرس و پورت اتصال، MQTT 3.1.1، شناسه دستگاه (Client ID)، تاپیک‌ها، محدودیت پلن‌ها، پرداخت و تمدید.",
-  keywords: ["سوالات MQTT", "پورت MQTT", "Client ID", "تاپیک MQTT", "بروکر MQTT", "mqttcloud"],
-  alternates: { canonical: "https://mqttcloud.ir/faq" },
-  openGraph: {
-    title: "سوالات متداول درباره بروکر MQTT | mqttcloud.ir",
-    description: "آدرس و پورت اتصال، شناسه دستگاه، تاپیک‌ها، پلن‌ها، پرداخت و تمدید.",
-    url: "https://mqttcloud.ir/faq",
-    type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "سوالات متداول درباره بروکر MQTT" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "سوالات متداول درباره بروکر MQTT | mqttcloud.ir",
-    description: "آدرس و پورت اتصال، شناسه دستگاه، تاپیک‌ها، پلن‌ها، پرداخت و تمدید.",
-    images: ["/opengraph-image"],
-  },
-};
+// Title, description and keywords are editable in /admin/seo-settings (src/lib/pageSeo.ts).
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata("faq");
+}
 
 export default async function FaqPage() {
   await connectDB();

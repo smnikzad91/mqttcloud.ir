@@ -1,29 +1,83 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { connectDB } from "@/lib/mongodb";
-import SiteSeo from "@/models/SiteSeo";
+import PageSeo from "@/models/PageSeo";
+import { PAGE_SEO_DEFAULTS, SEO_PAGES, TITLE_SUFFIX, isSeoPage } from "@/lib/pageSeo";
 
-export async function GET() {
+// Per-page search metadata for the public site (src/lib/pageSeo.ts).
+
+const TITLE_MAX = 120;
+const DESCRIPTION_MAX = 320;
+const KEYWORDS_MAX = 30;
+const KEYWORD_MAX = 60;
+
+async function requireAdmin() {
   const session = await auth();
-  if (!session?.user?.id || session.user.role !== "admin")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
-  await connectDB();
-  const seo = await SiteSeo.findOne();
-  return NextResponse.json(seo ?? { title: "", description: "", keywords: [] });
+  return session?.user?.id && session.user.role === "admin";
 }
 
-export async function PUT(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id || session.user.role !== "admin")
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+/** Every editable page with its effective values, defaults and whether an override exists. */
+export async function GET() {
+  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   await connectDB();
-  const { title, description, keywords } = await req.json();
-  const seo = await SiteSeo.findOneAndUpdate(
-    {},
-    { title, description, keywords },
-    { upsert: true, returnDocument: "after", runValidators: true, setDefaultsOnInsert: true }
+  const saved = await PageSeo.find({ page: { $in: SEO_PAGES } }).lean();
+  const byPage = new Map(saved.map((s) => [s.page, s]));
+
+  return NextResponse.json(
+    SEO_PAGES.map((page) => {
+      const d = PAGE_SEO_DEFAULTS[page];
+      const s = byPage.get(page);
+      return {
+        page,
+        path: d.path,
+        titleSuffix: d.absoluteTitle ? "" : TITLE_SUFFIX,
+        title: s?.title ?? d.title,
+        description: s?.description ?? d.description,
+        keywords: s?.keywords ?? d.keywords,
+        custom: !!s,
+        updatedAt: s?.updatedAt ?? null,
+        defaults: { title: d.title, description: d.description, keywords: d.keywords },
+      };
+    })
   );
-  return NextResponse.json(seo);
+}
+
+/** Save one page's override. */
+export async function PUT(req: Request) {
+  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const body = await req.json().catch(() => ({}));
+  const page = String(body.page ?? "");
+  const title = String(body.title ?? "").trim();
+  const description = String(body.description ?? "").trim();
+  const keywords: string[] = Array.isArray(body.keywords)
+    ? [...new Set(body.keywords.map((k: unknown) => String(k).trim()).filter(Boolean))] as string[]
+    : [];
+
+  if (!isSeoPage(page)) return NextResponse.json({ error: "Unknown page." }, { status: 400 });
+  if (!title || title.length > TITLE_MAX) return NextResponse.json({ error: `Title is required (max ${TITLE_MAX} characters).` }, { status: 400 });
+  if (!description || description.length > DESCRIPTION_MAX) return NextResponse.json({ error: `Description is required (max ${DESCRIPTION_MAX} characters).` }, { status: 400 });
+  if (keywords.length > KEYWORDS_MAX || keywords.some((k) => k.length > KEYWORD_MAX))
+    return NextResponse.json({ error: `At most ${KEYWORDS_MAX} keywords, each up to ${KEYWORD_MAX} characters.` }, { status: 400 });
+
+  await connectDB();
+  const saved = await PageSeo.findOneAndUpdate(
+    { page },
+    { page, title, description, keywords },
+    { upsert: true, returnDocument: "after", runValidators: true }
+  ).lean();
+  return NextResponse.json({ page, title: saved?.title, description: saved?.description, keywords: saved?.keywords, custom: true, updatedAt: saved?.updatedAt });
+}
+
+/** Drop a page's override, so it goes back to the defaults. */
+export async function DELETE(req: Request) {
+  if (!(await requireAdmin())) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const page = new URL(req.url).searchParams.get("page") ?? "";
+  if (!isSeoPage(page)) return NextResponse.json({ error: "Unknown page." }, { status: 400 });
+
+  await connectDB();
+  await PageSeo.deleteOne({ page });
+  return NextResponse.json({ ok: true });
 }

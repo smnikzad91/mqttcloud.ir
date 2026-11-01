@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageSeo";
 import BlogPageClient from "@/components/public/BlogPageClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { connectDB } from "@/lib/mongodb";
@@ -6,25 +7,10 @@ import BlogPost from "@/models/BlogPost";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "آموزش MQTT و اینترنت اشیا",
-  description: "آموزش MQTT به فارسی: اتصال ESP32 و آردوینو به بروکر، نمونه کد پایتون و Node.js، تاپیک‌ها و QoS و عیب‌یابی اتصال. راهنمای عملی برای پروژه‌های IoT.",
-  keywords: ["آموزش MQTT", "آموزش اینترنت اشیا", "ESP32 MQTT", "آردوینو MQTT", "پایتون MQTT", "Node.js MQTT", "QoS MQTT", "mqttcloud"],
-  alternates: { canonical: "https://mqttcloud.ir/blog" },
-  openGraph: {
-    title: "آموزش MQTT و اینترنت اشیا | mqttcloud.ir",
-    description: "اتصال ESP32 و آردوینو، نمونه کد پایتون و Node.js، تاپیک‌ها، QoS و عیب‌یابی.",
-    url: "https://mqttcloud.ir/blog",
-    type: "website",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "آموزش MQTT و اینترنت اشیا" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "آموزش MQTT و اینترنت اشیا | mqttcloud.ir",
-    description: "اتصال ESP32 و آردوینو، نمونه کد پایتون و Node.js، تاپیک‌ها، QoS و عیب‌یابی.",
-    images: ["/opengraph-image"],
-  },
-};
+// Title, description and keywords are editable in /admin/seo-settings (src/lib/pageSeo.ts).
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata("blog");
+}
 
 export default async function BlogPage() {
   await connectDB();

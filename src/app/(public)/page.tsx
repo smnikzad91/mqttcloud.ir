@@ -1,47 +1,17 @@
 import { Metadata } from "next";
+import { pageMetadata } from "@/lib/pageSeo";
 import HomePageClient from "@/components/public/HomePageClient";
 import { JsonLd } from "@/components/common/JsonLd";
 import { connectDB } from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 import NewsItem from "@/models/NewsItem";
 import Faq from "@/models/Faq";
-import SiteSeo from "@/models/SiteSeo";
 
 export const dynamic = "force-dynamic";
 
-const defaultSeo = {
-  title: "بروکر MQTT ایرانی و ابری برای اینترنت اشیا | mqttcloud.ir",
-  description: "سرور MQTT آماده برای پروژه‌های اینترنت اشیا (IoT): ESP32، آردوینو، رزبری‌پای و نرم‌افزار خود را در چند دقیقه با TLS وصل کنید. پلن رایگان، داشبورد فارسی و پرداخت ریالی با کارت بانکی.",
-  keywords: ["بروکر MQTT", "سرور MQTT", "بروکر MQTT ایرانی", "MQTT ابری", "سرور MQTT رایگان", "MQTT broker", "اینترنت اشیا", "IoT", "سرور اینترنت اشیا", "پلتفرم IoT", "ESP32 MQTT", "اتصال ESP32 به اینترنت", "آردوینو MQTT", "رزبری پای MQTT", "پروتکل MQTT", "آموزش MQTT", "جایگزین Mosquitto", "mqttcloud"],
-};
-
+// Title, description and keywords are editable in /admin/seo-settings (src/lib/pageSeo.ts).
 export async function generateMetadata(): Promise<Metadata> {
-  await connectDB();
-  const seo = await SiteSeo.findOne().lean();
-
-  const title = seo?.title || defaultSeo.title;
-  const description = seo?.description || defaultSeo.description;
-  const keywords = seo?.keywords?.length ? seo.keywords : defaultSeo.keywords;
-
-  return {
-    title: { absolute: title },
-    description,
-    keywords,
-    alternates: { canonical: "https://mqttcloud.ir" },
-    openGraph: {
-      title,
-      description,
-      url: "https://mqttcloud.ir",
-      type: "website",
-      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "mqttcloud.ir" }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: ["/opengraph-image"],
-    },
-  };
+  return pageMetadata("home");
 }
 
 export default async function HomePage() {
