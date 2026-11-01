@@ -4,12 +4,24 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
-import type { BlogPost } from "@/data/blogPosts";
 import { ReadingProgress } from "@/components/public/shared/ReadingProgress";
 import { Reveal } from "@/components/public/shared/Reveal";
 import { Button } from "@/components/public/shared/Button";
 import { AmbientGlow } from "@/components/public/shared/AmbientGlow";
 import { blogCategoryConfig, stripHash, formatDateFa } from "@/components/public/shared/contentTaxonomy";
+
+export interface BlogPost {
+  slug: string;
+  category: string;
+  title: string;
+  excerpt: string;
+  coverImage?: string;
+  createdAt?: string;
+  readTime: string;
+  sections?: { heading?: string; body: string; image?: string }[];
+  hashtags?: string[];
+  highlight?: boolean;
+}
 
 function slugify(str: string) {
   return str.replace(/\s+/g, "-");

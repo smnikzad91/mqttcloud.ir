@@ -8,7 +8,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Search, FileText, ExternalLink, Pencil, Trash2, Send, Star, DatabaseZap, ImageOff } from "lucide-react";
+import { Plus, Search, FileText, ExternalLink, Pencil, Trash2, Send, Star, ImageOff } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import type { TranslationKey } from "@/i18n/translations";
 import { useLanguage } from "@/context/LanguageContext";
@@ -31,8 +31,8 @@ type Kind = "blog" | "news";
 type Filter = "all" | "published" | "draft";
 
 const KEYS: Record<Kind, Record<string, TranslationKey>> = {
-  blog: { title: "blogPostsTitle", desc: "blogDesc", total: "blogPostsTotal", add: "blogNewPost", empty: "blogEmpty", published: "blogPublished", draft: "blogDraft", deleted: "blogDeleted", del: "blogDelete", delConfirm: "blogDeleteConfirm", sent: "blogTelegramSent", telegram: "blogTelegram", seed: "blogSeedBtn", seeding: "blogSeeding", seedDone: "blogSeedDone", view: "blogView", edit: "blogEdit" },
-  news: { title: "newsListTitle", desc: "newsDesc", total: "newsListTotal", add: "newsNewItem", empty: "newsEmpty", published: "newsPublished", draft: "newsDraft", deleted: "newsDeleted", del: "newsDelete", delConfirm: "newsDeleteConfirm", sent: "newsTelegramSent", telegram: "newsTelegram", seed: "newsSeedBtn", seeding: "newsSeeding", seedDone: "newsSeedDone", view: "newsView", edit: "newsEdit" },
+  blog: { title: "blogPostsTitle", desc: "blogDesc", total: "blogPostsTotal", add: "blogNewPost", empty: "blogEmpty", published: "blogPublished", draft: "blogDraft", deleted: "blogDeleted", del: "blogDelete", delConfirm: "blogDeleteConfirm", sent: "blogTelegramSent", telegram: "blogTelegram", view: "blogView", edit: "blogEdit" },
+  news: { title: "newsListTitle", desc: "newsDesc", total: "newsListTotal", add: "newsNewItem", empty: "newsEmpty", published: "newsPublished", draft: "newsDraft", deleted: "newsDeleted", del: "newsDelete", delConfirm: "newsDeleteConfirm", sent: "newsTelegramSent", telegram: "newsTelegram", view: "newsView", edit: "newsEdit" },
 };
 
 export default function ContentList({ kind, mapRow }: { kind: Kind; mapRow: (raw: Record<string, unknown>) => ContentRow }) {
@@ -46,7 +46,6 @@ export default function ContentList({ kind, mapRow }: { kind: Kind; mapRow: (raw
   const [category, setCategory] = useState("all");
   const [query, setQuery] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [seeding, setSeeding] = useState(false);
   const [confirm, setConfirm] = useState<{ kind: "publish" | "telegram" | "delete"; row: ContentRow } | null>(null);
 
   const load = useCallback(async () => {
@@ -91,16 +90,6 @@ export default function ContentList({ kind, mapRow }: { kind: Kind; mapRow: (raw
     setBusyId(null);
   };
 
-  const seed = async () => {
-    setSeeding(true);
-    const res = await fetch(`${base}/seed`, { method: "POST" });
-    const data = await res.json().catch(() => ({}));
-    setSeeding(false);
-    if (!res.ok) return toast.error(data.error ?? t("saveError"));
-    toast.success(`${data.inserted} ${k("seedDone")} ${data.skipped}`);
-    load();
-  };
-
   const categories = useMemo(() => [...new Set((rows ?? []).map((r) => r.category).filter(Boolean))].sort(), [rows]);
   const q = query.trim().toLowerCase();
   const shown = useMemo(() => (rows ?? []).filter((r) =>
@@ -119,7 +108,6 @@ export default function ContentList({ kind, mapRow }: { kind: Kind; mapRow: (raw
         description={k("desc")}
         actions={
           <>
-            <button type="button" onClick={seed} disabled={seeding} title={t("clSeedHint")} className={buttonClass("secondary")}><DatabaseZap className="h-4 w-4" />{seeding ? k("seeding") : k("seed")}</button>
             <Link href={`/admin/${kind}/new`} className={buttonClass("primary")}><Plus className="h-4 w-4" />{k("add").replace(/^\+\s*/, "")}</Link>
           </>
         }

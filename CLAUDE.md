@@ -84,9 +84,7 @@ Every `User` is on a plan that caps how many `MqttUser` credential sets ("sub-us
 
 ## Static Content
 
-Blog posts also live as a static array in `src/data/blogPosts.ts`. The seed endpoint `POST /api/admin/blog/seed` reads from this file and inserts missing posts into MongoDB. Prefer adding new posts to `blogPosts.ts` first (so they survive a DB reset), then trigger the seed endpoint.
-
-News items are seeded from the inline `seedData` array in `src/app/api/admin/news/seed/route.ts`. Use `category` (not `tag` — legacy field name) when adding new items.
+Blog posts and news items live only in MongoDB and are written from the admin panel (`/admin/blog`, `/admin/news`). There is no static seed: the template's seed data described a different product and was removed. For news, use `category` (not `tag`, a legacy field name).
 
 Publishing/updating a `BlogPost`, `NewsItem`, or `Announcement` also posts a message to a Telegram channel via `src/lib/telegram.ts` (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHANNEL`, optional `TELEGRAM_PROXY` as a SOCKS agent) — see the `admin/**/notify` routes and the relevant admin `[id]`/base routes.
 
