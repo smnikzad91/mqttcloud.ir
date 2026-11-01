@@ -173,7 +173,7 @@ export default function ContactPageClient() {
                   </p>
                 )}
 
-                <div className="mt-6 flex items-center justify-between gap-3">
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-xs text-gray-400 dark:text-gray-500">
                     با ارسال این فرم با{" "}
                     <Link href="/privacy" className="text-brand-500 hover:underline">حریم خصوصی</Link>{" "}
@@ -183,6 +183,7 @@ export default function ContactPageClient() {
                     type="submit"
                     loading={sending}
                     endIcon={<ArrowLeft className="h-4 w-4" />}
+                    className="w-full shrink-0 whitespace-nowrap sm:w-auto"
                   >
                     {sending ? "در حال ارسال…" : "ارسال پیام"}
                   </Button>
