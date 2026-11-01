@@ -102,7 +102,7 @@ export default async function NewsDetailPage({ params }: Props) {
     publisher: {
       "@type": "Organization",
       name: "mqttcloud.ir",
-      logo: { "@type": "ImageObject", url: "https://mqttcloud.ir/images/logo/logo-icon.svg" },
+      logo: { "@type": "ImageObject", url: "https://mqttcloud.ir/images/email/logo-mark.png" },
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };

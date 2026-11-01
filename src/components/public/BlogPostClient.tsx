@@ -29,8 +29,26 @@ function slugify(str: string) {
 
 // Section bodies are plain text with a few light conventions, so technical
 // posts read well in an RTL page: ```lang fenced code``` becomes an LTR code
-// block, `inline code` an LTR chip, and a paragraph whose lines all start with
-// "- " a bullet list. Everything else stays text (no HTML is ever injected).
+// block, `inline code` an LTR chip, [text](/path) a link, and a paragraph whose
+// lines all start with "- " a bullet list. Everything else stays text (no HTML
+// is ever injected); links accept only site paths and http(s) URLs.
+const LINK_CLASS = "font-medium text-brand-600 underline decoration-brand-300 underline-offset-4 hover:decoration-brand-500 dark:text-brand-400 dark:decoration-brand-500/40";
+
+function TextWithLinks({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(\[[^\]\n]+\]\((?:\/[^\s)]*|https?:\/\/[^\s)]+)\))/g).map((part, i) => {
+        const m = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (!m) return <span key={i}>{part}</span>;
+        const [, label, href] = m;
+        return href.startsWith("/")
+          ? <Link key={i} href={href} className={LINK_CLASS}>{label}</Link>
+          : <a key={i} href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>{label}</a>;
+      })}
+    </>
+  );
+}
+
 function InlineText({ text }: { text: string }) {
   return (
     <>
@@ -40,7 +58,7 @@ function InlineText({ text }: { text: string }) {
             {part.slice(1, -1)}
           </code>
         ) : (
-          <span key={i}>{part}</span>
+          <TextWithLinks key={i} text={part} />
         ),
       )}
     </>

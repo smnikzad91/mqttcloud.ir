@@ -9,7 +9,7 @@ const organizationJsonLd = {
   "@type": "Organization",
   name: "mqttcloud.ir",
   url: "https://mqttcloud.ir",
-  logo: "https://mqttcloud.ir/images/logo/logo-icon.svg",
+  logo: "https://mqttcloud.ir/images/email/logo-mark.png",
   description:
     "mqttcloud.ir یک بروکر MQTT امن و مقیاس‌پذیر است. اکانت و دستگاه بسازید، با TLS متصل شوید و پیام‌ها را بی‌درنگ بین دستگاه‌های خود منتشر و دریافت کنید.",
 };
