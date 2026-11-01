@@ -65,6 +65,34 @@ async function sendPhoto(photoUrl: string, caption: string, options: SendOptions
   return (res.result as Record<string, unknown>)?.message_id as number ?? null;
 }
 
+// Posts without their own cover go out with a branded banner (new logo +
+// "خبر جدید" / "مقاله جدید" / "اعلان"), rendered once from the brand files and
+// served from public/images/telegram/. A photo caption is capped at 1024
+// characters (vs 4096 for a text message), so long text is trimmed to fit.
+const CAPTION_MAX = 1024;
+const BANNER = {
+  news:         `${SITE}/images/telegram/news.png`,
+  blog:         `${SITE}/images/telegram/blog.png`,
+  announcement: `${SITE}/images/telegram/announcement.png`,
+};
+
+const absolute = (url: string) => (url.startsWith("http") ? url : `${SITE}${url}`);
+
+/** Shorten plain text to `max` characters (before HTML-escaping, so no entity is cut). */
+function clip(s: string, max: number) {
+  return s.length <= max ? s : `${s.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}
+
+/** Send as a photo post; if Telegram can't fetch the image, still publish the text. */
+async function sendPost(photoUrl: string, caption: string, options: SendOptions = {}): Promise<number | null> {
+  try {
+    return await sendPhoto(photoUrl, caption, options);
+  } catch (err) {
+    console.error("telegram sendPhoto failed, falling back to text:", err instanceof Error ? err.message : err);
+    return sendMessage(caption, options);
+  }
+}
+
 export interface NewsPayload {
   id:          string;
   title:       string;
@@ -101,35 +129,28 @@ export async function notifyNews(news: NewsPayload) {
     tags ? `🏷 ${tags}` : null,
   ].filter((l) => l !== null).join("\n");
 
-  if (news.coverImage) {
-    const imageUrl = news.coverImage.startsWith("http") ? news.coverImage : `${SITE}${news.coverImage}`;
-    await sendPhoto(imageUrl, lines, { replyMarkup: markup });
-  } else {
-    await sendMessage(lines, { replyMarkup: markup });
-  }
+  await sendPost(news.coverImage ? absolute(news.coverImage) : BANNER.news, lines, { replyMarkup: markup });
 }
 
 export async function notifyBlog(p: BlogPayload) {
   const tags   = p.hashtags.map((t) => `#${t.replace(/\s+/g, "_")}`).join(" ");
   const url    = `${SITE}/blog/${p.slug}`;
   const markup = { inline_keyboard: [[{ text: "📖 مطالعه مقاله", url }]] };
-  const text   = [
+  const build = (excerpt: string) => [
     `✍️ <b>مقاله جدید منتشر شد!</b>`,
     ``,
     `📌 <b>${escapeHtml(p.title)}</b>`,
     `🗂 <i>${escapeHtml(p.category)}</i>`,
     p.readTime ? `⏱ ${escapeHtml(p.readTime)}` : null,
     ``,
-    `💬 ${escapeHtml(p.excerpt)}`,
+    `💬 ${escapeHtml(excerpt)}`,
     tags ? `\n🏷 ${tags}` : null,
   ].filter((l) => l !== null).join("\n");
+  // The excerpt is the only part that can run long; give it whatever room the rest leaves.
+  const room = CAPTION_MAX - build("").length - 20;
+  const text = build(clip(p.excerpt, room));
 
-  if (p.coverImage) {
-    const imageUrl = p.coverImage.startsWith("http") ? p.coverImage : `${SITE}${p.coverImage}`;
-    await sendPhoto(imageUrl, text, { replyMarkup: markup });
-  } else {
-    await sendMessage(text, { replyMarkup: markup });
-  }
+  await sendPost(p.coverImage ? absolute(p.coverImage) : BANNER.blog, text, { replyMarkup: markup });
 }
 
 export async function notifyAnnouncement(a: AnnouncementPayload) {
@@ -141,9 +162,9 @@ export async function notifyAnnouncement(a: AnnouncementPayload) {
   const text = [
     `🔔 <b>اعلان جدید!</b>`,
     ``,
-    `${emoji} <b>${escapeHtml(a.text)}</b>`,
+    `${emoji} <b>${escapeHtml(clip(a.text, CAPTION_MAX - 80))}</b>`,
   ].join("\n");
 
-  const msgId = await sendMessage(text, { replyMarkup: markup }).catch(console.error);
+  const msgId = await sendPost(BANNER.announcement, text, { replyMarkup: markup }).catch(console.error);
   if (msgId) await pinMessage(msgId).catch(console.error);
 }
