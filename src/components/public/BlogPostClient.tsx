@@ -90,7 +90,7 @@ function SectionBody({ body }: { body: string }) {
       out.push(
         <div key={`code-${i}`} dir="ltr" className="overflow-hidden rounded-xl border border-gray-200 bg-gray-950 text-left dark:border-gray-700">
           {lang && <div className="border-b border-white/10 px-4 py-1.5 font-mono text-[11px] text-gray-400">{lang}</div>}
-          <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-6 text-gray-100"><code>{blocks[i + 2].replace(/\n$/, "")}</code></pre>
+          <pre className="overflow-x-auto p-4 font-[JetBrains_Mono,ui-monospace,Menlo,Consolas,Vazirmatn,monospace] text-[13px] leading-6 text-gray-100"><code>{blocks[i + 2].replace(/\n$/, "")}</code></pre>
         </div>,
       );
     }
