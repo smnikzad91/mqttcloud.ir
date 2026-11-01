@@ -7,6 +7,7 @@ import MqttClient from "@/models/MqttClient";
 import { PLAN_DEFS, SELF_SERVICE_PLANS, resolvePlanLimits, type PlanKey } from "@/lib/plans";
 import { assertUsageFitsPlan, PlanLimitError } from "@/lib/planEnforcement";
 import { sendPlanChangedSms, newClientSmsId } from "@/lib/sms";
+import { syncCredentialsToPlan } from "@/lib/planSync";
 
 export async function GET() {
   const session = await auth();
@@ -85,6 +86,7 @@ export async function PATCH(req: NextRequest) {
       planReminderSentAt: null,
     },
   }).select("phone").lean();
+  await syncCredentialsToPlan(session.user.id);
 
   if (user?.phone) {
     sendPlanChangedSms(user.phone, targetPlan, newClientSmsId("planchange")).catch(console.error);

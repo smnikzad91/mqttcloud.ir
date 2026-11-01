@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import { sendPlanExpiringSoonSms, sendPlanExpiredSms, newClientSmsId } from "@/lib/sms";
 import { PLAN_REMINDER_DAYS_BEFORE } from "@/lib/plans";
+import { syncCredentialsToPlan } from "@/lib/planSync";
 
 // Runs on a timer from instrumentation.ts. Only ever touches accounts on a
 // paid self-service plan (basic/starter) with a planExpiresAt set — free and
@@ -25,6 +26,8 @@ export async function runPlanExpiryCheck(): Promise<void> {
       { _id: user._id, planExpiresAt: { $lte: now } }, // re-checked: avoids a double-fire if a renewal lands between the find and here
       { $set: { plan: "free", planMaxUsers: null, planClientsPerUser: null, planExpiresAt: null, planReminderSentAt: null } }
     );
+    // Pause credential sets beyond the free limits; the broker then disconnects their devices.
+    await syncCredentialsToPlan(String(user._id)).catch((err) => console.error("plan sync after expiry failed:", err));
     if (user.phone) {
       sendPlanExpiredSms(user.phone, previousPlan, newClientSmsId("planexpired")).catch(console.error);
     }

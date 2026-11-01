@@ -24,6 +24,7 @@ export async function GET() {
       id:            c._id,
       username:      c.username,
       isActive:      c.isActive,
+      planBlocked:   !!c.planBlocked,
       maxConnection: c.maxConnection,
       createdAt:     c.createdAt,
     }))

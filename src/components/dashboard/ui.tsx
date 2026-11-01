@@ -42,6 +42,7 @@ const STATUS_TONE: Record<string, BadgeTone> = {
   new: "info",
   read: "neutral",
   suspended: "error",
+  planBlocked: "warning",
   rejected: "error",
   disconnected: "error",
   disconnect: "error",

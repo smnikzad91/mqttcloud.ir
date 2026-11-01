@@ -11,7 +11,7 @@ import DataGrid, { MonoCell, DateCell, StatusCell } from "@/components/dashboard
 import { OwnerCell, RelativeCell, RelTime, readParam, fromControl, type Owner } from "@/components/admin/AdminParts";
 import { PageHeader, Panel, StatTile, EmptyState, SkeletonRows, FilterPills, ConfirmDialog, StatusBadge, inputClass, cn, useFormatNumber } from "@/components/dashboard/ui";
 
-type Credential = { id: string; username: string; isActive: boolean; maxConnection: number; createdAt: string; user: Owner };
+type Credential = { id: string; username: string; isActive: boolean; planBlocked: boolean; maxConnection: number; createdAt: string; user: Owner };
 type CredRow = Credential & { devices: number; online: number };
 type Client = { id: string; clientName: string; username: string; isOnline: boolean; lastSeenAt: string | null; createdAt: string; user: Owner };
 type ActivityRow = { id: string; clientName: string; event: "connect" | "disconnect"; createdAt: string; user: Owner };
@@ -127,7 +127,7 @@ export default function AdminMqttPage() {
   const credCols = useMemo<ColDef<CredRow>[]>(() => [
     { field: "user", headerName: t("amOwner"), flex: 1.4, minWidth: 200, sortable: false, cellRenderer: OwnerCell },
     { field: "username", headerName: t("mqttUsername"), flex: 1, minWidth: 150, cellRenderer: MonoCell },
-    { field: "isActive", headerName: t("finStatus"), width: 130, cellRenderer: StatusCell, valueGetter: (p) => (p.data?.isActive ? "active" : "suspended") },
+    { field: "isActive", headerName: t("finStatus"), width: 130, cellRenderer: StatusCell, valueGetter: (p) => (!p.data?.isActive ? "suspended" : p.data.planBlocked ? "planBlocked" : "active") },
     { field: "devices", headerName: t("amDevicesOfMax"), width: 190, cellRenderer: DevicesCell },
     { field: "createdAt", headerName: t("mqCreated"), width: 130, sort: "desc", cellRenderer: DateCell },
     { colId: "actions", headerName: "", width: 100, pinned: "right", sortable: false, cellRenderer: CredActions },
@@ -149,7 +149,7 @@ export default function AdminMqttPage() {
   const context = useMemo<Ctx>(() => ({
     isRTL, t, neverLabel: t("mqttNeverSeen"), onToggle, onDelete,
     statusLabels: {
-      active: t("mqttActive"), suspended: t("mqttSuspended"), online: t("mqttOnline"), offline: t("mqttOffline"),
+      active: t("mqttActive"), suspended: t("mqttSuspended"), planBlocked: t("mqttPlanBlocked"), online: t("mqttOnline"), offline: t("mqttOffline"),
       connect: t("eventConnect"), disconnect: t("eventDisconnect"),
     },
   }), [isRTL, t, onToggle, onDelete]);

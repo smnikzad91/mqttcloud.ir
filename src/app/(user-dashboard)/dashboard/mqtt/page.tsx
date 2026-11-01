@@ -16,7 +16,7 @@ import {
   Dialog, ConfirmDialog, Field, inputClass, buttonClass, cn, useFormatNumber,
 } from "@/components/dashboard/ui";
 
-type Credential = { id: string; username: string; isActive: boolean; maxConnection: number; createdAt: string };
+type Credential = { id: string; username: string; isActive: boolean; planBlocked: boolean; maxConnection: number; createdAt: string };
 type Client = { id: string; clientName: string; isOnline: boolean; lastSeenAt: string | null; createdAt: string; credential: { id: string; username: string } | null };
 type PlanInfo = { limits: { maxUsers: number; clientsPerUser: number }; usage: { mqttUsers: number; clients: { mqttUserId: string; count: number }[] } };
 
@@ -242,8 +242,10 @@ export default function UserMqttPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <CopyChip value={c.username} />
                           <StatusBadge status={c.isActive ? "active" : "suspended"} label={c.isActive ? t("mqttActive") : t("mqttSuspended")} />
+                          {c.planBlocked && <StatusBadge status="planBlocked" label={t("mqttPlanBlocked")} />}
                         </div>
                         {!c.isActive && <p className="mt-1 text-xs text-error-600 dark:text-error-400">{t("brkSuspendedNote")}</p>}
+                        {c.planBlocked && <p className="mt-1 text-xs text-warning-700 dark:text-warning-400">{t("brkPlanBlockedNote")}</p>}
                       </div>
                       <div className="w-full sm:w-48">
                         <QuotaMeter used={devices.length} limit={limitOf(c)} label={t("mqttClients")} />

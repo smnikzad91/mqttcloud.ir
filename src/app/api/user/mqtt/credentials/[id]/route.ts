@@ -6,6 +6,7 @@ import MqttUser from "@/models/MqttUser";
 import MqttClient from "@/models/MqttClient";
 import MqttActivity from "@/models/MqttActivity";
 import MqttPayload from "@/models/MqttPayload";
+import { syncCredentialsToPlan } from "@/lib/planSync";
 
 export async function PATCH(
   req: NextRequest,
@@ -52,6 +53,8 @@ export async function DELETE(
     MqttPayload.deleteMany({ mqttUserId: credential._id }),
     credential.deleteOne(),
   ]);
+  // A freed slot can lift the plan pause on the next-oldest credential set.
+  await syncCredentialsToPlan(String(credential.userId));
 
   return NextResponse.json({ ok: true });
 }

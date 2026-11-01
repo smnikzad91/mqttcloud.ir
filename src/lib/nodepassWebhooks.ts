@@ -8,6 +8,7 @@ import { sendDepositStatusEmail } from "@/lib/mailer";
 import { sendPlanChangedSms, newClientSmsId } from "@/lib/sms";
 import { assertUsageFitsPlan, PlanLimitError } from "@/lib/planEnforcement";
 import { PLAN_SUBSCRIPTION_DAYS, PAID_SELF_SERVICE_PLANS, type PlanKey } from "@/lib/plans";
+import { syncCredentialsToPlan } from "@/lib/planSync";
 
 // nodepass can redeliver the same event, and (per its own docs) a payment
 // can go PENDING -> EXPIRED -> PAID if the bank SMS lands just after expiry.
@@ -82,6 +83,8 @@ export async function handlePlanPurchaseWebhook(purchase: InstanceType<typeof Pl
         planReminderSentAt: null,
       },
     }).select("phone").lean();
+    // Lift any plan pause and apply the new per-account connection cap.
+    await syncCredentialsToPlan(String(purchase.userId)).catch((err) => console.error("plan sync after purchase failed:", err));
 
     if (user?.phone) {
       sendPlanChangedSms(user.phone, purchase.targetPlan, newClientSmsId("planchange")).catch(console.error);

@@ -9,6 +9,7 @@ import MqttPayload from "@/models/MqttPayload";
 import Card from "@/models/Card";
 import { PLAN_SUBSCRIPTION_DAYS } from "@/lib/plans";
 import { sendPlanChangedSms, newClientSmsId } from "@/lib/sms";
+import { syncCredentialsToPlan } from "@/lib/planSync";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -48,6 +49,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const user = await User.findByIdAndUpdate(id, { $set: update }, { returnDocument: "after" }).lean();
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (plan !== undefined || planMaxUsers !== undefined || planClientsPerUser !== undefined) {
+    await syncCredentialsToPlan(id);
+  }
 
   if (plan !== undefined && user.phone) {
     sendPlanChangedSms(user.phone, plan, newClientSmsId("planchange")).catch(console.error);

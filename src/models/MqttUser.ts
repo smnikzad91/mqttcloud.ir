@@ -11,6 +11,8 @@ export interface IMqttUser extends Document {
   password: string; // bcrypt hash — never returned by the API
   isActive: boolean;
   maxConnection: number;
+  /** Over the account's current plan (e.g. after a paid plan expired): the broker refuses and disconnects it. Set by syncCredentialsToPlan. */
+  planBlocked: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,6 +24,7 @@ const MqttUserSchema = new Schema<IMqttUser>(
     password:      { type: String, required: true },
     isActive:      { type: Boolean, default: true },
     maxConnection: { type: Number, default: 3, min: 1 },
+    planBlocked:   { type: Boolean, default: false },
   },
   { timestamps: true }
 );
