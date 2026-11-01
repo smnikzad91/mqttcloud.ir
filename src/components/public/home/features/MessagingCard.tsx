@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Zap } from "lucide-react";
 import { useReducedMotionSafe } from "@/components/public/shared/motion";
-import { useLiveInterval, useTimeouts } from "@/components/public/shared/useLiveInterval";
-import { SIG, fa } from "../signal";
+import { useTimeouts } from "@/components/public/shared/useLiveInterval";
+import { SIG } from "../signal";
 import { CardHeader, SimButton, SpotlightCard, panelClass } from "./SpotlightCard";
 
 const SUBS = [
@@ -13,36 +13,27 @@ const SUBS = [
   { y: 105, label: "SUB_3", color: SIG.success, path: "M 265 65 C 330 65, 360 105, 445 105", dur: [1.5, 0.55] },
 ];
 
-/** Feature 1 — real-time pub/sub: oscilloscope + one publisher fanning out to three subscribers, with a "burst" button. */
+/** Feature 1 — real-time pub/sub: oscilloscope + one publisher fanning out to three subscribers, with a "burst" button.
+ *  Deliberately shows no latency/throughput figures: nothing measures them. */
 export function MessagingCard() {
-  const ref = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotionSafe();
   const later = useTimeouts();
   const [bursting, setBursting] = useState(false);
-  const [throughput, setThroughput] = useState(12450);
-  const [latency, setLatency] = useState(15);
-
-  useLiveInterval(() => {
-    setThroughput(Math.floor(bursting ? 48200 + Math.random() * 4500 : 12100 + Math.random() * 750));
-    setLatency(Math.floor(bursting ? 12 + Math.random() * 4 : 14 + Math.random() * 5));
-  }, 900, ref);
 
   function burst() {
     if (bursting) return;
     setBursting(true);
-    setThroughput(51840);
-    setLatency(12);
     later(() => setBursting(false), 3600);
   }
 
   return (
     <SpotlightCard>
-      <div ref={ref}>
+      <div>
         <CardHeader
           icon={<Zap className="h-6 w-6" aria-hidden="true" />}
           gradient="from-brand-500 to-theme-cyan-500"
           title="پیام‌رسانی بی‌درنگ"
-          subtitle={<>تأخیر لحظه‌ای: <span dir="ltr">{fa(latency)}ms</span></>}
+          subtitle="یک پیام، تحویل به همه مشترک‌ها"
           action={
             <SimButton onClick={burst} active={bursting} icon={<Zap className="h-3.5 w-3.5" aria-hidden="true" />}>
               {bursting ? "در حال ارسال انبوه…" : "تست بار (Burst)"}
@@ -60,9 +51,7 @@ export function MessagingCard() {
             <span className="h-2 w-2 animate-ping rounded-full bg-theme-cyan-500" />
             {bursting ? "BURST_MODE" : "STREAM_ACTIVE"}
           </span>
-          <span className="font-bold text-success-400">
-            {fa(throughput.toLocaleString("en-US"))} پیام/ثانیه
-          </span>
+          <span dir="ltr" className="font-mono-signal font-bold text-success-400">1 PUB → 3 SUB</span>
         </div>
 
         <div dir="ltr" className="relative h-32 w-full overflow-hidden rounded-xl border border-white/5 bg-black/40 sm:h-36">
