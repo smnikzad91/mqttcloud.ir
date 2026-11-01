@@ -11,8 +11,15 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-function stripMarkdown(text: string) {
-  return text.replace(/[#*_`~>[\]]/g, "").replace(/\n+/g, " ").trim().slice(0, 160);
+const SITE = "https://mqttcloud.ir";
+const absolute = (url: string) => (url.startsWith("http") ? url : `${SITE}${url}`);
+
+/** Plain-text summary for meta/OG: markdown stripped, cut at a word boundary to fit Google's ~155 characters. */
+function stripMarkdown(text: string, max = 155) {
+  const plain = text.replace(/[#*_`~>[\]]/g, "").replace(/\s+/g, " ").trim();
+  if (plain.length <= max) return plain;
+  const cut = plain.slice(0, max);
+  return `${cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 20)).trimEnd()}…`;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -23,7 +30,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const url = `https://mqttcloud.ir/news/${id}`;
   const description = stripMarkdown(item.body);
-  const image = item.coverImage ?? item.image ?? "/opengraph-image";
+  // An uploaded image's real size is unknown, so only the default card declares dimensions.
+  const ogImage = item.coverImage ?? item.image
+    ? { url: absolute((item.coverImage ?? item.image) as string), alt: item.title }
+    : { url: "/opengraph-image", width: 1200, height: 630, alt: item.title };
   const keywords = [item.category, ...(item.hashtags ?? [])].filter(Boolean);
   const publishedTime = item.publishedAt ? (item.publishedAt as Date).toISOString() : undefined;
 
@@ -40,13 +50,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       publishedTime,
       authors: ["mqttcloud.ir"],
       tags: keywords,
-      images: [{ url: image, width: 1200, height: 630, alt: item.title }],
+      modifiedTime: item.updatedAt ? (item.updatedAt as Date).toISOString() : publishedTime,
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title: item.title,
       description,
-      images: [image],
+      images: [ogImage.url],
     },
   };
 }
@@ -68,6 +79,7 @@ export default async function NewsDetailPage({ params }: Props) {
     coverImage:  raw.coverImage ?? undefined,
     highlight:   raw.highlight,
     publishedAt: raw.publishedAt ? (raw.publishedAt as Date).toISOString() : undefined,
+    updatedAt:   raw.updatedAt ? (raw.updatedAt as Date).toISOString() : undefined,
   };
 
   const relatedRaw = await NewsItem.find({
@@ -95,9 +107,10 @@ export default async function NewsDetailPage({ params }: Props) {
     "@type": "NewsArticle",
     headline: item.title,
     description: stripMarkdown(item.body),
-    image: image ? [image] : undefined,
+    image: image ? [absolute(image)] : undefined,
     datePublished: item.publishedAt,
-    dateModified: item.publishedAt,
+    dateModified: item.updatedAt ?? item.publishedAt,
+    inLanguage: "fa-IR",
     author: { "@type": "Organization", name: "mqttcloud.ir", url: "https://mqttcloud.ir" },
     publisher: {
       "@type": "Organization",

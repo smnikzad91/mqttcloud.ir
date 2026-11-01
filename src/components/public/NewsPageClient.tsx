@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { Newspaper } from "lucide-react";
 import { Reveal } from "@/components/public/shared/Reveal";
+import { HeroRise } from "@/components/public/shared/HeroRise";
 import { Stagger, StaggerItem } from "@/components/public/shared/Stagger";
 import { AmbientGlow } from "@/components/public/shared/AmbientGlow";
 import { ContentEmpty } from "@/components/public/shared/ContentEmpty";
@@ -44,7 +45,7 @@ export default function NewsPageClient({ news }: Props) {
       <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
 
         {/* ─── Header ─── */}
-        <Reveal className="text-center">
+        <HeroRise className="text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-600 shadow-theme-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-brand-400">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
             آخرین به‌روزرسانی‌ها
@@ -63,7 +64,7 @@ export default function NewsPageClient({ news }: Props) {
               مطالب آموزشی را در وبلاگ بخوانید
             </Link>
           </div>
-        </Reveal>
+        </HeroRise>
 
         {/* ─── Filter tabs ─── */}
         {news.length > 0 && <Reveal delay={0.1} className="mt-8 flex flex-wrap justify-center gap-2">

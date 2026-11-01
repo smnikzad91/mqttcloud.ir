@@ -53,7 +53,7 @@ export const PAGE_SEO_DEFAULTS: Record<SeoPageKey, PageConfig> = {
   },
   news: {
     path: "/news",
-    title: "اخبار",
+    title: "اخبار و اطلاعیه‌های بروکر MQTT",
     description: "آخرین اخبار، به‌روزرسانی‌ها و اطلاعیه‌های mqttcloud.ir. از جدیدترین امکانات بروکر MQTT مطلع شوید.",
     keywords: ["اخبار MQTT", "اخبار mqttcloud", "به‌روزرسانی محصول", "اطلاعیه"],
   },

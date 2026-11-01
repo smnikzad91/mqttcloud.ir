@@ -7,8 +7,13 @@ import NewsItem from "@/models/NewsItem";
 export const dynamic = "force-dynamic";
 
 // Title, description and keywords are editable in /admin/seo-settings (src/lib/pageSeo.ts).
+// While nothing is published the page is only an empty state: noindex it (as the sitemap
+// already leaves it out) so Google doesn't file it as thin content. It flips to indexable
+// as soon as the first item is published.
 export async function generateMetadata(): Promise<Metadata> {
-  return pageMetadata("news");
+  const meta = await pageMetadata("news");
+  const hasNews = await NewsItem.exists({ published: true }).catch(() => null);
+  return hasNews ? meta : { ...meta, robots: { index: false, follow: true } };
 }
 
 export default async function NewsPage() {
