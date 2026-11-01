@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "صفحه پیدا نشد | mqttcloud.ir",
+  title: "صفحه پیدا نشد",
   description: "صفحه‌ای که دنبالش هستید وجود ندارد یا جابه‌جا شده است.",
 };
 
