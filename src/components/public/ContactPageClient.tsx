@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Check, HelpCircle, LifeBuoy, Lock, Mail, MessageCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { Reveal } from "@/components/public/shared/Reveal";
+import { HeroRise } from "@/components/public/shared/HeroRise";
 import { Container } from "@/components/public/shared/Container";
 import { Button } from "@/components/public/shared/Button";
 import { AmbientGlow } from "@/components/public/shared/AmbientGlow";
@@ -62,20 +63,20 @@ export default function ContactPageClient() {
       <Container size="sm" className="relative pb-24 pt-20">
 
         {/* Header */}
-        <Reveal className="text-center">
+        <HeroRise className="text-center">
           <span className="inline-block rounded-full border border-white/60 bg-white/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-600 shadow-theme-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-brand-400">
             ارتباط با ما
           </span>
           <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
-            تماس با ما
+            تماس با پشتیبانی
           </h1>
           <p className="mt-4 text-base leading-relaxed text-gray-500 dark:text-gray-400">
             سوال، پیشنهاد یا مشکلی دارید؟ پیام بفرستید — ظرف ۲۴ ساعت پاسخ می‌دهیم.
           </p>
-        </Reveal>
+        </HeroRise>
 
         {/* Faster routes than the form: answers already written, and tracked tickets for customers */}
-        <Reveal delay={0.05} className="mt-10 grid gap-3 sm:grid-cols-2">
+        <HeroRise delay={0.05} className="mt-10 grid gap-3 sm:grid-cols-2">
           <Link href="/faq" className="group flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-brand-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500/40">
             <HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" aria-hidden="true" />
             <span>
@@ -90,10 +91,10 @@ export default function ContactPageClient() {
               <span className="mt-0.5 block text-xs leading-relaxed text-gray-500 dark:text-gray-400">برای مشکلات حساب و دستگاه‌ها از داشبورد تیکت ثبت کنید تا پاسخ‌ها در یک‌جا بماند.</span>
             </span>
           </Link>
-        </Reveal>
+        </HeroRise>
 
         {/* Form / Success */}
-        <Reveal delay={0.1} className="mt-8">
+        <HeroRise delay={0.1} className="mt-8">
           <AnimatePresence mode="wait">
             {sent ? (
               <motion.div
@@ -191,7 +192,7 @@ export default function ContactPageClient() {
               </motion.form>
             )}
           </AnimatePresence>
-        </Reveal>
+        </HeroRise>
 
         {/* Contact info strip */}
         <Reveal delay={0.2} className="mt-10 flex flex-wrap justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">

@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import ContactPageClient from "@/components/public/ContactPageClient";
+import { JsonLd } from "@/components/common/JsonLd";
 
 export const metadata: Metadata = {
   title: "تماس با پشتیبانی",
@@ -21,6 +22,20 @@ export const metadata: Metadata = {
   },
 };
 
+const contactJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  name: "تماس با پشتیبانی mqttcloud.ir",
+  url: "https://mqttcloud.ir/contact",
+  inLanguage: "fa-IR",
+  about: { "@type": "Organization", name: "mqttcloud.ir", url: "https://mqttcloud.ir" },
+};
+
 export default function ContactPage() {
-  return <ContactPageClient />;
+  return (
+    <>
+      <JsonLd data={contactJsonLd} />
+      <ContactPageClient />
+    </>
+  );
 }
