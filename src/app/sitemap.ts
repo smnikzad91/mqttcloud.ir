@@ -3,6 +3,7 @@ import { newsHref } from "@/lib/newsSlug";
 import { connectDB } from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 import NewsItem from "@/models/NewsItem";
+import LegalPage from "@/models/LegalPage";
 
 const BASE_URL = "https://mqttcloud.ir";
 
@@ -11,9 +12,10 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   await connectDB();
 
-  const [blogPosts, newsItems] = await Promise.all([
+  const [blogPosts, newsItems, legalDocs] = await Promise.all([
     BlogPost.find({ published: true }).select("slug updatedAt createdAt").lean(),
     NewsItem.find({ published: true }).select("_id slug publishedAt updatedAt").lean(),
+    LegalPage.find({ content: { $nin: ["", null] } }).select("type updatedAt").lean<{ type: string; updatedAt?: Date }[]>(),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -22,8 +24,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/blog`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/faq`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}/contact`, changeFrequency: "yearly", priority: 0.5 },
-    { url: `${BASE_URL}/privacy`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${BASE_URL}/terms`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((p) => ({
@@ -45,5 +45,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ? [{ url: `${BASE_URL}/news`, changeFrequency: "weekly", priority: 0.8 }]
     : [];
 
-  return [...staticRoutes, ...newsIndex, ...blogRoutes, ...newsRoutes];
+  // Legal pages are noindex until their text is written in the admin, so list them only then.
+  const legalRoutes: MetadataRoute.Sitemap = legalDocs.map((l) => ({
+    url: `${BASE_URL}/${l.type}`,
+    lastModified: l.updatedAt,
+    changeFrequency: "yearly",
+    priority: 0.3,
+  }));
+
+  return [...staticRoutes, ...newsIndex, ...legalRoutes, ...blogRoutes, ...newsRoutes];
 }

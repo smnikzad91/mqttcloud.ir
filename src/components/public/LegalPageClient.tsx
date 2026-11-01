@@ -1,18 +1,16 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Reveal } from "@/components/public/shared/Reveal";
+import { HeroRise } from "@/components/public/shared/HeroRise";
 import { Container } from "@/components/public/shared/Container";
 import { Button } from "@/components/public/shared/Button";
 import { AmbientGlow } from "@/components/public/shared/AmbientGlow";
-import { SignalPath } from "@/components/public/shared/SignalPath";
 
-interface LegalData {
+export interface LegalData {
   title: string;
   content: string;
   updatedAt?: string;
 }
+
+const PAGE_NAME = { privacy: "حریم خصوصی", terms: "شرایط استفاده" } as const;
 
 function renderContent(content: string) {
   return content
@@ -24,16 +22,11 @@ function renderContent(content: string) {
     ));
 }
 
-export default function LegalPageClient({ type }: { type: "privacy" | "terms" }) {
-  const [data, setData] = useState<LegalData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`/api/public/legal/${type}`)
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [type]);
+// The text comes from the server (privacy/terms page.tsx), so it is in the HTML crawlers
+// read; the H1 always renders, falling back to the page's name.
+export default function LegalPageClient({ type, data }: { type: "privacy" | "terms"; data: LegalData | null }) {
+  const title = data?.title?.trim() || PAGE_NAME[type];
+  const hasContent = !!data?.content?.trim();
 
   return (
     <div className="relative overflow-hidden">
@@ -41,51 +34,44 @@ export default function LegalPageClient({ type }: { type: "privacy" | "terms" })
       <AmbientGlow className="left-[calc(50%-180px)] -top-16 h-[300px] w-[360px] bg-brand-500/10 blur-[110px] dark:bg-brand-500/10" duration={24} />
 
       <Container size="md" className="relative pb-24 pt-20">
-
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <SignalPath variant="loader" />
+        <HeroRise>
+          {/* Header */}
+          <div className="mb-12 text-center">
+            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
+              {title}
+            </h1>
+            {hasContent && data?.updatedAt && (
+              <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">
+                آخرین بروزرسانی:{" "}
+                {new Date(data.updatedAt).toLocaleDateString("fa-IR", {
+                  year: "numeric", month: "long", day: "numeric",
+                })}
+              </p>
+            )}
           </div>
-        ) : !data?.title && !data?.content ? (
-          <div className="py-24 text-center">
-            <p className="text-gray-400 dark:text-gray-500">
-              {type === "privacy" ? "حریم خصوصی" : "شرایط استفاده"} هنوز تنظیم نشده است.
-            </p>
-          </div>
-        ) : (
-          <Reveal>
-            {/* Header */}
-            <div className="mb-12 text-center">
-              <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
-                {data.title}
-              </h1>
-              {data.updatedAt && (
-                <p className="mt-4 text-sm text-gray-400 dark:text-gray-500">
-                  آخرین بروزرسانی:{" "}
-                  {new Date(data.updatedAt).toLocaleDateString("fa-IR", {
-                    year: "numeric", month: "long", day: "numeric",
-                  })}
-                </p>
-              )}
-            </div>
 
-            {/* Content */}
+          {/* Content */}
+          {hasContent ? (
             <article className="space-y-5 text-base" dir="rtl">
-              {data.content ? renderContent(data.content) : null}
+              {renderContent(data!.content)}
             </article>
+          ) : (
+            <p className="py-12 text-center text-gray-400 dark:text-gray-500">
+              متن {PAGE_NAME[type]} هنوز منتشر نشده است. برای هر سوالی با ما تماس بگیرید.
+            </p>
+          )}
 
-            {/* Back link */}
-            <div className="mt-16 flex justify-center gap-4 text-sm">
-              <Link
-                href="/"
-                className="rounded-xl border border-gray-200 px-5 py-2.5 font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-              >
-                بازگشت به صفحه اصلی
-              </Link>
-              <Button href="/contact">تماس با ما</Button>
-            </div>
-          </Reveal>
-        )}
+          {/* Back link */}
+          <div className="mt-16 flex justify-center gap-4 text-sm">
+            <Link
+              href="/"
+              className="rounded-xl border border-gray-200 px-5 py-2.5 font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
+            >
+              بازگشت به صفحه اصلی
+            </Link>
+            <Button href="/contact">تماس با ما</Button>
+          </div>
+        </HeroRise>
       </Container>
     </div>
   );
