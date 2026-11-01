@@ -48,13 +48,12 @@ export default function HowItWorks() {
   // Step 2 — devices
   const [phase, setPhase] = useState<0 | 1 | 2>(2);
   const [devices, setDevices] = useState([
-    { id: "device-01", hw: "ESP32", rtt: 12, bars: [85, 100, 75, 95] },
-    { id: "device-02", hw: "RPi-4", rtt: 18, bars: [70, 90, 100, 80] },
-    { id: "device-03", hw: "PLC", rtt: 15, bars: [95, 80, 90, 100] },
+    { id: "device-01", hw: "ESP32", bars: [85, 100, 75, 95] },
+    { id: "device-02", hw: "RPi-4", bars: [70, 90, 100, 80] },
+    { id: "device-03", hw: "PLC", bars: [95, 80, 90, 100] },
   ]);
 
   // Step 3 — activity feed
-  const [rate, setRate] = useState(42);
   const [ripple, setRipple] = useState(false);
   const [feed, setFeed] = useState<FeedEvent[]>([
     { id: 1, title: "device-01 متصل شد ✓", topic: `${DEMO_USER}/status`, qos: "QoS 1", time: "همین الان" },
@@ -66,7 +65,6 @@ export default function HowItWorks() {
     setDevices((prev) =>
       prev.map((d) => ({
         ...d,
-        rtt: Math.max(9, Math.min(24, d.rtt + Math.floor(Math.random() * 5) - 2)),
         bars: d.bars.map(() => Math.floor(55 + Math.random() * 45)),
       })),
     );
@@ -96,7 +94,6 @@ export default function HowItWorks() {
   function emitEvent() {
     setActive(2);
     setRipple(true);
-    setRate((r) => Math.min(98, r + Math.floor(Math.random() * 14) + 5));
     const sample = SAMPLE_EVENTS[Math.floor(Math.random() * SAMPLE_EVENTS.length)];
     setFeed((prev) => [{ ...sample, id: Date.now(), time: "همین الان" }, ...prev.slice(0, 2)]);
     later(() => setRipple(false), 750);
@@ -320,7 +317,7 @@ export default function HowItWorks() {
                       <span className="font-mono-signal text-xs font-bold">{d.id}</span>
                     </div>
                     <div className="flex items-center gap-2 text-[11px]">
-                      <span dir="ltr" className="font-mono-signal text-gray-400">{fa(d.rtt)}ms</span>
+                      <span dir="ltr" className="font-mono-signal text-gray-400">{d.hw}</span>
                       {phase === 0 && <span className="font-mono-signal font-bold text-warning-400">CONNECT…</span>}
                       {phase === 1 && <span className="font-mono-signal font-bold text-theme-cyan-500">TLS…</span>}
                       {phase === 2 && <span className="font-bold text-success-400">متصل ✓</span>}
@@ -348,7 +345,7 @@ export default function HowItWorks() {
                   </div>
                 </div>
                 <span dir="ltr" className="rounded-lg border border-theme-cyan-500/30 bg-theme-cyan-500/15 px-2 py-1 font-mono-signal text-[10px] font-extrabold text-theme-cyan-500">
-                  {fa(rate)} msg/s
+                  {DEMO_USER}/#
                 </span>
               </div>
 
