@@ -8,7 +8,8 @@ import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
 import { useWallet } from "@/context/WalletContext";
 import { getJson } from "@/lib/getJson";
-import DataGrid, { AmountCell, DateCell, StatusCell } from "@/components/dashboard/DataGrid";
+import DataGrid, { AmountCell, StatusCell } from "@/components/dashboard/DataGrid";
+import { RelativeCell } from "@/components/dashboard/RelTime";
 import {
   PageHeader, Panel, EmptyState, SkeletonRows, FilterPills, CopyChip, Dialog, ConfirmDialog, Field,
   inputClass, buttonClass, cn, useFormatNumber,
@@ -48,6 +49,10 @@ function CardCell({ value }: { value: Deposit["card"] }) {
 }
 
 function NoteCell({ data, context }: ICellRendererParams<Deposit> & { context: Ctx }) {
+  // A rejection reason is the one thing the user must not miss.
+  if (data?.status === "rejected" && data.adminNote) {
+    return <span dir="auto" title={data.adminNote} className="truncate text-xs font-medium text-error-600 dark:text-error-400">{data.adminNote}</span>;
+  }
   if (data?.receiptImage) {
     return <a href={data.receiptImage} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">{context.t("finReceipt")}</a>;
   }
@@ -138,7 +143,7 @@ export default function FinancePage() {
   const columns = useMemo<ColDef<Deposit>[]>(() => [
     { field: "amount", headerName: t("finAmount"), width: 160, cellRenderer: AmountCell },
     { field: "status", headerName: t("finStatus"), width: 140, cellRenderer: StatusCell },
-    { field: "createdAt", headerName: t("finDate"), width: 140, sort: "desc", cellRenderer: DateCell },
+    { field: "createdAt", headerName: t("finDate"), width: 140, sort: "desc", cellRenderer: RelativeCell },
     { colId: "tracking", headerName: t("finTracking"), width: 170, sortable: false, cellRenderer: TrackingCell },
     ...(hasCards ? [{ field: "card" as const, headerName: t("finCard"), width: 170, sortable: false, cellRenderer: CardCell, valueFormatter: () => "" }] : []),
     { colId: "note", headerName: t("finNote"), flex: 1, minWidth: 140, sortable: false, cellRenderer: NoteCell, tooltipField: "adminNote" },

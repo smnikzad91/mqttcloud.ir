@@ -8,7 +8,8 @@ import { Plus, LifeBuoy, MessageCircle } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
 import { getJson } from "@/lib/getJson";
-import DataGrid, { DateCell, StatusCell } from "@/components/dashboard/DataGrid";
+import DataGrid, { StatusCell } from "@/components/dashboard/DataGrid";
+import { RelativeCell } from "@/components/dashboard/RelTime";
 import ImageUploader from "@/components/dashboard/ImageUploader";
 import { useTicketStatusLabels } from "@/components/dashboard/TicketThread";
 import { PageHeader, Panel, EmptyState, SkeletonRows, FilterPills, Dialog, Field, inputClass, buttonClass, cn } from "@/components/dashboard/ui";
@@ -85,12 +86,13 @@ export default function SupportPage() {
 
   const rows = useMemo(() => (tickets ?? []).filter((x) => filter === "all" || x.status === filter), [tickets, filter]);
   const count = (f: Filter) => (tickets ?? []).filter((x) => f === "all" || x.status === f).length;
+  const repliedToYou = (tickets ?? []).filter((x) => x.status !== "closed" && x.lastReply?.sender === "admin").length;
 
   const columns = useMemo<ColDef<Ticket>[]>(() => [
     { field: "subject", headerName: t("ticketSubject"), flex: 2, minWidth: 220, cellRenderer: SubjectCell },
     { field: "status", headerName: t("finStatus"), width: 140, cellRenderer: StatusCell },
     { field: "replyCount", headerName: t("ticketReplyCount"), width: 110, cellRenderer: RepliesCell },
-    { field: "updatedAt", headerName: t("tkUpdated"), width: 150, sort: "desc", cellRenderer: DateCell },
+    { field: "updatedAt", headerName: t("tkUpdated"), width: 150, sort: "desc", cellRenderer: RelativeCell },
   ], [t]);
   const context = useMemo(() => ({ isRTL, statusLabels, t }), [isRTL, statusLabels, t]);
 
@@ -101,6 +103,14 @@ export default function SupportPage() {
         description={t("supportDesc")}
         actions={<button type="button" onClick={openNew} className={buttonClass("primary")}><Plus className="h-4 w-4" />{t("newTicket")}</button>}
       />
+
+      {repliedToYou > 0 && filter !== "answered" && (
+        <button type="button" onClick={() => setFilter("answered")} className="flex w-full items-center gap-3 rounded-2xl border border-brand-200 bg-brand-25 p-4 text-start text-sm transition hover:border-brand-300 dark:border-brand-500/25 dark:bg-brand-500/10">
+          <MessageCircle className="h-5 w-5 shrink-0 text-brand-600 dark:text-brand-400" aria-hidden />
+          <span className="flex-1 text-gray-800 dark:text-gray-100">{t("tkRepliedBanner").replace("{n}", repliedToYou.toLocaleString(isRTL ? "fa-IR" : "en-US"))}</span>
+          <span className="text-sm font-medium text-brand-600 dark:text-brand-400">{t("tkShow")}</span>
+        </button>
+      )}
 
       <Panel bodyClassName="p-0">
         <div className="border-b border-gray-100 px-5 py-3 dark:border-gray-800">

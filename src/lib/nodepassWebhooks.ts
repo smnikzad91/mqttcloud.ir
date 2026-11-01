@@ -64,7 +64,13 @@ export async function handlePlanPurchaseWebhook(purchase: InstanceType<typeof Pl
       return;
     }
 
-    const expiresAt = new Date(Date.now() + PLAN_SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000);
+    // Renewing the same plan before it lapses extends from the current end
+    // date, so paying early never costs the days already paid for.
+    const current = await User.findById(purchase.userId).select("plan planExpiresAt").lean();
+    const base = current?.plan === purchase.targetPlan && current.planExpiresAt && current.planExpiresAt.getTime() > Date.now()
+      ? current.planExpiresAt.getTime()
+      : Date.now();
+    const expiresAt = new Date(base + PLAN_SUBSCRIPTION_DAYS * 24 * 60 * 60 * 1000);
     const user = await User.findByIdAndUpdate(purchase.userId, {
       $set: {
         plan: purchase.targetPlan,

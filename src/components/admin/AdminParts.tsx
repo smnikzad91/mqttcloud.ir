@@ -5,9 +5,11 @@
 
 import Link from "next/link";
 import { Clock } from "lucide-react";
-import { useLanguage } from "@/context/LanguageContext";
-import { formatRelative, useNow } from "@/lib/relativeTime";
+import { useNow } from "@/lib/relativeTime";
+import { RelTime, RelativeCell } from "@/components/dashboard/RelTime";
 import { cn, type BadgeTone } from "@/components/dashboard/ui";
+
+export { RelTime, RelativeCell };
 
 export type Owner = { name: string; email: string } | null;
 
@@ -29,19 +31,6 @@ export function OwnerCell({ value }: { value: Owner }) {
       <span dir="ltr" className="truncate text-start text-xs text-gray-500 dark:text-gray-400">{value.email}</span>
     </div>
   );
-}
-
-/** "3 hours ago" that keeps itself current; the exact time is in the tooltip. */
-export function RelTime({ iso, className }: { iso: string; className?: string }) {
-  const { lang } = useLanguage();
-  const now = useNow(60_000);
-  const exact = new Date(iso).toLocaleString(lang === "fa" ? "fa-IR" : "en-US", { dateStyle: "medium", timeStyle: "short", hour12: false });
-  return <time dateTime={iso} title={exact} className={cn("whitespace-nowrap", className)}>{formatRelative(iso, lang, now)}</time>;
-}
-
-export function RelativeCell({ value, context }: { value: string | null; context: { neverLabel?: string } }) {
-  if (!value) return <span className="text-gray-400">{context.neverLabel ?? "—"}</span>;
-  return <RelTime iso={value} className="text-xs text-gray-500 dark:text-gray-400" />;
 }
 
 const AGE_TONE: Record<BadgeTone, string> = {

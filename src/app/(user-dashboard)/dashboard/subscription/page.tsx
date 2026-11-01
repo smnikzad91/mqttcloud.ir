@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, Clock, X } from "lucide-react";
+import { Check, Clock, X, RefreshCw, TriangleAlert } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
-import { PLAN_DEFS, type PlanKey } from "@/lib/plans";
+import { PLAN_DEFS, PLAN_SUBSCRIPTION_DAYS, PLAN_REMINDER_DAYS_BEFORE, type PlanKey } from "@/lib/plans";
 import { getJson } from "@/lib/getJson";
+import { useNow } from "@/lib/relativeTime";
 import { PageHeader, Panel, QuotaMeter, StatusBadge, SkeletonRows, buttonClass, cn, useFormatNumber } from "@/components/dashboard/ui";
 
 interface PlanData {
@@ -25,7 +26,9 @@ const PLAN_LABEL_KEY = { free: "planLabelFree", basic: "planLabelBasic", starter
 const PENDING_KEY = "pending-plan-checkout";
 const PENDING_TTL_MS = 30 * 60 * 1000; // nodepass payment links expire after 30 minutes
 
-type Pending = { plan: PlanKey; at: number };
+// `expiresAt` is the end date before paying, so a renewal (same plan) can tell
+// when it has landed: the plan stays the same but the end date moves.
+type Pending = { plan: PlanKey; at: number; expiresAt?: string | null };
 
 function readPending(): Pending | null {
   try {
@@ -40,6 +43,7 @@ export default function SubscriptionPage() {
   const t = useT();
   const { lang } = useLanguage();
   const fmt = useFormatNumber();
+  const now = useNow(60_000);
   const [data, setData] = useState<PlanData | null | undefined>(undefined);
   const [switching, setSwitching] = useState<PlanKey | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -51,7 +55,7 @@ export default function SubscriptionPage() {
 
   // Clear the pending notice once the plan has actually switched.
   useEffect(() => {
-    if (pending && data && data.plan === pending.plan) {
+    if (pending && data && data.plan === pending.plan && (pending.expiresAt === undefined || data.planExpiresAt !== pending.expiresAt)) {
       try { sessionStorage.removeItem(PENDING_KEY); } catch {}
       queueMicrotask(() => setPending(null));
     }
@@ -94,7 +98,7 @@ export default function SubscriptionPage() {
       if (paid) {
         // Hand off to nodepass's hosted payment page — the plan itself only
         // actually changes once the webhook confirms payment.
-        try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({ plan, at: Date.now() } satisfies Pending)); } catch {}
+        try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({ plan, at: Date.now(), expiresAt: plan === data?.plan ? data.planExpiresAt : undefined } satisfies Pending)); } catch {}
         toast.info(t("subPayRedirect"));
         window.location.href = json.statusUrl;
         return;
@@ -104,6 +108,15 @@ export default function SubscriptionPage() {
     } finally {
       setSwitching(null);
     }
+  };
+
+  // Paid plans run for PLAN_SUBSCRIPTION_DAYS and drop to free when they lapse.
+  const daysLeft = data?.planExpiresAt ? Math.max(0, Math.ceil((new Date(data.planExpiresAt).getTime() - now) / 864e5)) : null;
+  const expiringSoon = daysLeft !== null && daysLeft <= PLAN_REMINDER_DAYS_BEFORE;
+  const canRenew = !!data && (PLAN_DEFS[currentPlan].priceToman ?? 0) > 0 && PLAN_DEFS[currentPlan].selfService;
+  const totalOf = (plan: PlanKey) => {
+    const def = PLAN_DEFS[plan];
+    return def.maxUsers === null || def.clientsPerUser === null ? null : def.maxUsers * def.clientsPerUser;
   };
 
   const limitsLine = (plan: PlanKey) => {
@@ -132,6 +145,16 @@ export default function SubscriptionPage() {
         </div>
       )}
 
+      {expiringSoon && !pending && data && (
+        <div role="status" className="flex items-start gap-3 rounded-2xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/20 dark:bg-warning-500/10">
+          <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-warning-600 dark:text-warning-400" aria-hidden />
+          <div className="min-w-0 flex-1 text-sm">
+            <p className="font-semibold text-gray-900 dark:text-white">{daysLeft === 0 ? t("subEndsToday") : t("subDaysLeft").replace("{n}", fmt(daysLeft ?? 0))}</p>
+            <p className="mt-0.5 text-gray-600 dark:text-gray-300">{t("subExpiryWarn")}</p>
+          </div>
+        </div>
+      )}
+
       {/* Current plan + usage */}
       <Panel
         title={t("currentPlan")}
@@ -143,10 +166,28 @@ export default function SubscriptionPage() {
           <div className="grid gap-6 lg:grid-cols-3">
             <div>
               <p className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{t(PLAN_LABEL_KEY[currentPlan])}</p>
-              {data.planExpiresAt && (
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  {t("subRenewal")}: {new Date(data.planExpiresAt).toLocaleDateString(lang === "fa" ? "fa-IR" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
-                </p>
+              {data.planExpiresAt && daysLeft !== null && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex items-baseline justify-between gap-2 text-sm">
+                    <span className={cn("font-semibold", expiringSoon ? "text-warning-700 dark:text-warning-400" : "text-gray-900 dark:text-white")}>
+                      {daysLeft === 0 ? t("subEndsToday") : t("subDaysLeft").replace("{n}", fmt(daysLeft))}
+                    </span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      {t("subEndsOn")} {new Date(data.planExpiresAt).toLocaleDateString(lang === "fa" ? "fa-IR" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-gray-100 dark:bg-white/5">
+                    <div className={cn("h-full rounded-full", expiringSoon ? "bg-warning-500" : "bg-brand-500")} style={{ width: `${Math.min(100, (daysLeft / PLAN_SUBSCRIPTION_DAYS) * 100)}%` }} />
+                  </div>
+                </div>
+              )}
+              {canRenew && (
+                <div className="mt-4">
+                  <button type="button" onClick={() => handleSwitch(currentPlan)} disabled={switching !== null} className={cn(buttonClass(expiringSoon ? "primary" : "secondary"), "w-full")}>
+                    <RefreshCw className="h-4 w-4" />{switching === currentPlan ? t("subSwitching") : t("subRenew").replace("{price}", `${fmt(PLAN_DEFS[currentPlan].priceToman ?? 0)} ${t("walletUnit")}`)}
+                  </button>
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{t("subRenewHint")}</p>
+                </div>
               )}
               <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
                 {t("subTotalClients")}: <span className="font-semibold text-gray-800 dark:text-gray-100">{fmt(totalClients)}</span>
@@ -192,6 +233,9 @@ export default function SubscriptionPage() {
                     <>{fmt(price)} <span className="text-sm font-medium text-gray-500">{t("walletUnit")} {t("subPerMonth")}</span></>
                   )}
                 </p>
+                {isUp && totalOf(plan) !== null && totalOf(currentPlan) !== null && (
+                  <p className="mt-2 text-xs font-medium text-success-700 dark:text-success-400">{t("subMoreDevices").replace("{n}", fmt((totalOf(plan) ?? 0) - (totalOf(currentPlan) ?? 0)))}</p>
+                )}
                 <ul className="mt-4 flex-1 space-y-2 text-sm text-gray-600 dark:text-gray-300">
                   {limitsLine(plan).map((l) => (
                     <li key={l} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-success-500" aria-hidden />{l}</li>
@@ -206,7 +250,11 @@ export default function SubscriptionPage() {
                 )}
 
                 <div className="mt-5">
-                  {isCurrent ? null : def.selfService ? (
+                  {isCurrent ? (canRenew ? (
+                    <button type="button" onClick={() => handleSwitch(plan)} disabled={switching !== null} className={cn(buttonClass("secondary"), "w-full")}>
+                      <RefreshCw className="h-4 w-4" />{switching === plan ? t("subSwitching") : t("subRenewShort")}
+                    </button>
+                  ) : null) : def.selfService ? (
                     <button
                       type="button"
                       onClick={() => handleSwitch(plan)}
