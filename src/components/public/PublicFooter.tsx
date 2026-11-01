@@ -40,7 +40,7 @@ export default function PublicFooter() {
   return (
     <footer className="border-t border-gray-200 bg-white pt-12 pb-8 dark:border-white/10 dark:bg-gray-950 sm:pt-16 sm:pb-12">
       <Reveal className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Phones: brand full width, the two link lists side by side, newsletter full width */}
+        {/* Phones: brand full width, the two link lists side by side, sign-up block full width */}
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 pb-10 lg:grid-cols-12 lg:gap-10 lg:pb-12">
           <div className="col-span-2 space-y-4 lg:col-span-4">
             <Link href="/" className="inline-flex items-center gap-2.5">
@@ -90,22 +90,11 @@ export default function PublicFooter() {
           </div>
 
           <div className="col-span-2 space-y-4 lg:col-span-4">
-            <h3 className="text-sm font-black text-gray-900 dark:text-white">خبرنامه</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">جدیدترین اخبار و به‌روزرسانی‌ها را دریافت کنید.</p>
-            <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
-              <label htmlFor="footer-newsletter-email" className="sr-only">ایمیل شما</label>
-              <input
-                id="footer-newsletter-email"
-                type="email"
-                dir="ltr"
-                placeholder="you@company.ir"
-                className="min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-500/15 focus:outline-none dark:border-white/15 dark:bg-white/5 dark:text-white dark:focus:border-theme-cyan-500"
-              />
-              <Button type="submit" size="md" className="shrink-0 rounded-xl">عضو شو</Button>
-            </form>
-            <div className="inline-flex items-center gap-2 text-xs font-bold text-success-600 dark:text-success-400">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-success-500" />
-              همه سیستم‌ها عملیاتی
+            <h3 className="text-sm font-black text-gray-900 dark:text-white">شروع کنید</h3>
+            <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">پلن رایگان بدون کارت بانکی: یک اکانت MQTT و دو دستگاه، همین حالا.</p>
+            <div className="flex flex-wrap gap-2">
+              <Button href="/signup" size="md" className="rounded-xl">شروع رایگان</Button>
+              <Button href="/signin" variant="secondary" size="md" className="rounded-xl">ورود</Button>
             </div>
           </div>
         </div>
