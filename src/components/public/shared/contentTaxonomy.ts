@@ -35,6 +35,12 @@ export const blogCategoryConfig: Record<string, CategoryConfig> = {
     icon: Sparkles,
     light: "bg-violet-50 dark:bg-violet-500/10",
   },
+  "عیب‌یابی": {
+    badge: "bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-300",
+    gradient: "from-warning-500 to-orange-600",
+    icon: LifeBuoy,
+    light: "bg-warning-50 dark:bg-warning-500/10",
+  },
 };
 
 export const newsTagConfig: Record<string, CategoryConfig> = {

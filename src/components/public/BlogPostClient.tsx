@@ -27,6 +27,59 @@ function slugify(str: string) {
   return str.replace(/\s+/g, "-");
 }
 
+// Section bodies are plain text with a few light conventions, so technical
+// posts read well in an RTL page: ```lang fenced code``` becomes an LTR code
+// block, `inline code` an LTR chip, and a paragraph whose lines all start with
+// "- " a bullet list. Everything else stays text (no HTML is ever injected).
+function InlineText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(`[^`\n]+`)/g).map((part, i) =>
+        part.length > 2 && part.startsWith("`") && part.endsWith("`") ? (
+          <code key={i} dir="ltr" className="rounded-md bg-gray-100 px-1.5 py-0.5 font-mono text-[0.85em] text-gray-800 dark:bg-white/10 dark:text-gray-100">
+            {part.slice(1, -1)}
+          </code>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+function SectionBody({ body }: { body: string }) {
+  const blocks = body.split(/```([\w+-]*)\n([\s\S]*?)```/g);
+  const out: React.ReactNode[] = [];
+  for (let i = 0; i < blocks.length; i += 3) {
+    blocks[i]
+      .split(/\n\s*\n/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .forEach((para, j) => {
+        const lines = para.split("\n");
+        out.push(
+          lines.every((l) => l.trimStart().startsWith("- ")) ? (
+            <ul key={`${i}-${j}`} className="list-disc space-y-1.5 pr-5 marker:text-brand-400">
+              {lines.map((l, k) => <li key={k}><InlineText text={l.trimStart().slice(2)} /></li>)}
+            </ul>
+          ) : (
+            <p key={`${i}-${j}`} className="whitespace-pre-line"><InlineText text={para} /></p>
+          ),
+        );
+      });
+    if (i + 2 < blocks.length) {
+      const lang = blocks[i + 1];
+      out.push(
+        <div key={`code-${i}`} dir="ltr" className="overflow-hidden rounded-xl border border-gray-200 bg-gray-950 text-left dark:border-gray-700">
+          {lang && <div className="border-b border-white/10 px-4 py-1.5 font-mono text-[11px] text-gray-400">{lang}</div>}
+          <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-6 text-gray-100"><code>{blocks[i + 2].replace(/\n$/, "")}</code></pre>
+        </div>,
+      );
+    }
+  }
+  return <>{out}</>;
+}
+
 function TableOfContents({ headings, activeId }: { headings: string[]; activeId: string }) {
   if (headings.length === 0) return null;
   return (
@@ -198,8 +251,8 @@ export default function BlogPostClient({ post, related }: Props) {
                         />
                       </div>
                     )}
-                    <div className="text-gray-600 dark:text-gray-300 leading-8 whitespace-pre-line">
-                      {section.body}
+                    <div className="space-y-4 text-gray-600 dark:text-gray-300 leading-8">
+                      <SectionBody body={section.body} />
                     </div>
                     {i < (post.sections ?? []).length - 1 && section.heading && (
                       <div className="mt-10 h-px bg-gradient-to-l from-transparent via-gray-200 to-transparent dark:via-gray-700" />
