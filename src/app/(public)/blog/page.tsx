@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import BlogPageClient from "@/components/public/BlogPageClient";
+import { JsonLd } from "@/components/common/JsonLd";
 import { connectDB } from "@/lib/mongodb";
 import BlogPost from "@/models/BlogPost";
 
@@ -44,5 +45,37 @@ export default async function BlogPage() {
     highlight:   p.highlight ?? false,
   }));
 
-  return <BlogPageClient posts={posts} />;
+  const absolute = (url: string) => (url.startsWith("http") ? url : `https://mqttcloud.ir${url}`);
+  const blogJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: "آموزش MQTT و اینترنت اشیا",
+    url: "https://mqttcloud.ir/blog",
+    inLanguage: "fa-IR",
+    publisher: { "@type": "Organization", name: "mqttcloud.ir", url: "https://mqttcloud.ir" },
+    blogPost: posts.map((p) => ({
+      "@type": "BlogPosting",
+      headline: p.title,
+      description: p.excerpt,
+      url: `https://mqttcloud.ir/blog/${p.slug}`,
+      datePublished: p.createdAt,
+      image: p.coverImage ? absolute(p.coverImage) : undefined,
+    })),
+  };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "خانه", item: "https://mqttcloud.ir" },
+      { "@type": "ListItem", position: 2, name: "وبلاگ", item: "https://mqttcloud.ir/blog" },
+    ],
+  };
+
+  return (
+    <>
+      <JsonLd data={blogJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <BlogPageClient posts={posts} />
+    </>
+  );
 }

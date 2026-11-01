@@ -47,10 +47,10 @@ export default function BlogPageClient({ posts }: Props) {
         {/* ─── Header ─── */}
         <Reveal className="text-center">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/70 px-4 py-1.5 text-xs font-semibold tracking-wide text-brand-600 shadow-theme-xs backdrop-blur-md dark:border-white/10 dark:bg-white/5 dark:text-brand-400">
-            آموزش و راهنما
+            وبلاگ mqttcloud.ir
           </span>
           <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-5xl">
-            وبلاگ
+            آموزش MQTT و اینترنت اشیا
           </h1>
           <p className="mx-auto mt-4 max-w-md text-base leading-relaxed text-gray-500 dark:text-gray-400">
             آموزش راه‌اندازی بروکر MQTT، اتصال دستگاه‌ها و راهنمای استفاده از mqttcloud.ir.
@@ -114,7 +114,7 @@ export default function BlogPageClient({ posts }: Props) {
                   {/* Banner */}
                   <div className={`relative h-48 sm:h-60 ${!featured.coverImage ? `bg-gradient-to-br ${cfg?.gradient ?? "from-brand-500 to-indigo-600"}` : "bg-gray-900"} overflow-hidden`}>
                     {featured.coverImage
-                      ? <Image src={featured.coverImage} alt={featured.title} fill sizes="(max-width: 1024px) 100vw, 1152px" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                      ? <Image src={featured.coverImage} alt={featured.title} fill priority sizes="(max-width: 1024px) 100vw, 1152px" className="object-cover transition-transform duration-700 group-hover:scale-105" />
                       : <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: "radial-gradient(circle, #fff 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
                     }
                     {featured.coverImage && <div className="absolute inset-0 bg-black/30" />}

@@ -76,10 +76,15 @@ export default async function BlogPostPage({ params }: Props) {
     highlight:   raw.highlight ?? false,
   };
 
-  const relatedRaw = await BlogPost.find({ slug: { $ne: slug }, published: true })
-    .limit(3)
-    .select("slug category title excerpt readTime createdAt coverImage")
-    .lean();
+  // Related: same category first, newest first, topped up with the newest other posts.
+  const relatedFields = "slug category title excerpt readTime createdAt coverImage";
+  const sameCategory = await BlogPost.find({ slug: { $ne: slug }, published: true, category: raw.category })
+    .sort({ createdAt: -1 }).limit(3).select(relatedFields).lean();
+  const others = sameCategory.length < 3
+    ? await BlogPost.find({ slug: { $nin: [slug, ...sameCategory.map((p) => p.slug)] }, published: true })
+        .sort({ createdAt: -1 }).limit(3 - sameCategory.length).select(relatedFields).lean()
+    : [];
+  const relatedRaw = [...sameCategory, ...others];
 
   const related = relatedRaw.map((p) => ({
     slug:       p.slug,
