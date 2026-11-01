@@ -250,7 +250,7 @@ export default function OGImage() {
               marginTop: 28,
             }}
           >
-            {["Low Latency", "TLS Encrypted", "Per-Account Topics"].map((f) => (
+            {["TLS Encrypted", "Per-Account Topics"].map((f) => (
               <div
                 key={f}
                 style={{
