@@ -10,9 +10,9 @@ import SiteSeo from "@/models/SiteSeo";
 export const dynamic = "force-dynamic";
 
 const defaultSeo = {
-  title: "mqttcloud.ir — بروکر MQTT ابری برای دستگاه‌های شما",
-  description: "mqttcloud.ir یک بروکر MQTT امن و مقیاس‌پذیر است. اکانت و دستگاه بسازید، با TLS متصل شوید و پیام‌ها را بی‌درنگ بین دستگاه‌های خود منتشر و دریافت کنید.",
-  keywords: ["بروکر MQTT", "MQTT ابری", "IoT", "اتصال دستگاه", "پیام‌رسانی بی‌درنگ", "pub sub", "MQTT broker", "mqttcloud"],
+  title: "بروکر MQTT ایرانی و ابری برای اینترنت اشیا | mqttcloud.ir",
+  description: "سرور MQTT آماده برای پروژه‌های اینترنت اشیا (IoT): ESP32، آردوینو، رزبری‌پای و نرم‌افزار خود را در چند دقیقه با TLS وصل کنید. پلن رایگان، داشبورد فارسی و پرداخت ریالی با کارت بانکی.",
+  keywords: ["بروکر MQTT", "سرور MQTT", "بروکر MQTT ایرانی", "MQTT ابری", "سرور MQTT رایگان", "MQTT broker", "اینترنت اشیا", "IoT", "سرور اینترنت اشیا", "پلتفرم IoT", "ESP32 MQTT", "اتصال ESP32 به اینترنت", "آردوینو MQTT", "رزبری پای MQTT", "پروتکل MQTT", "آموزش MQTT", "جایگزین Mosquitto", "mqttcloud"],
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -89,8 +89,18 @@ export default async function HomePage() {
       }
     : null;
 
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "mqttcloud.ir",
+    alternateName: "بروکر MQTT ابری mqttcloud",
+    url: "https://mqttcloud.ir",
+    inLanguage: "fa-IR",
+  };
+
   return (
     <>
+      <JsonLd data={websiteJsonLd} />
       {faqJsonLd && <JsonLd data={faqJsonLd} />}
       <HomePageClient featuredBlog={featuredBlog} featuredNews={featuredNews} faqs={faqs} />
     </>

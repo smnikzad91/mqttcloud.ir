@@ -12,11 +12,11 @@ import AgGridSetup from "@/components/common/AgGridSetup";
 export const metadata: Metadata = {
   metadataBase: new URL("https://mqttcloud.ir"),
   title: {
-    default: "mqttcloud.ir — بروکر MQTT ابری برای دستگاه‌های شما",
+    default: "بروکر MQTT ایرانی و ابری برای اینترنت اشیا | mqttcloud.ir",
     template: "%s | mqttcloud.ir",
   },
-  description: "mqttcloud.ir یک بروکر MQTT امن و مقیاس‌پذیر است. اکانت و دستگاه بسازید، با TLS متصل شوید و پیام‌ها را بی‌درنگ بین دستگاه‌های خود منتشر و دریافت کنید.",
-  keywords: ["بروکر MQTT", "MQTT ابری", "IoT", "اتصال دستگاه", "پیام‌رسانی بی‌درنگ", "pub sub", "MQTT broker", "mqttcloud"],
+  description: "سرور MQTT آماده برای پروژه‌های اینترنت اشیا (IoT): ESP32، آردوینو، رزبری‌پای و نرم‌افزار خود را در چند دقیقه با TLS وصل کنید. پلن رایگان، داشبورد فارسی و پرداخت ریالی با کارت بانکی.",
+  keywords: ["بروکر MQTT", "سرور MQTT", "بروکر MQTT ایرانی", "MQTT ابری", "سرور MQTT رایگان", "MQTT broker", "اینترنت اشیا", "IoT", "سرور اینترنت اشیا", "پلتفرم IoT", "ESP32 MQTT", "اتصال ESP32 به اینترنت", "آردوینو MQTT", "رزبری پای MQTT", "پروتکل MQTT", "آموزش MQTT", "جایگزین Mosquitto", "mqttcloud"],
   authors: [{ name: "mqttcloud.ir", url: "https://mqttcloud.ir" }],
   creator: "mqttcloud.ir",
   publisher: "mqttcloud.ir",
@@ -25,8 +25,8 @@ export const metadata: Metadata = {
     siteName: "mqttcloud.ir",
     locale: "fa_IR",
     type: "website",
-    title: "mqttcloud.ir — بروکر MQTT ابری برای دستگاه‌های شما",
-    description: "اکانت و دستگاه بسازید، با TLS متصل شوید و پیام‌ها را بی‌درنگ بین دستگاه‌های خود منتشر و دریافت کنید.",
+    title: "بروکر MQTT ایرانی و ابری برای اینترنت اشیا | mqttcloud.ir",
+    description: "سرور MQTT آماده برای اینترنت اشیا: دستگاه‌ها را با TLS وصل کنید. پلن رایگان، داشبورد فارسی و پرداخت ریالی.",
     url: "https://mqttcloud.ir",
     images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "mqttcloud.ir" }],
   },
@@ -34,8 +34,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@mqttcloud_ir",
     creator: "@mqttcloud_ir",
-    title: "mqttcloud.ir — بروکر MQTT ابری برای دستگاه‌های شما",
-    description: "اکانت و دستگاه بسازید، با TLS متصل شوید و پیام‌ها را بی‌درنگ بین دستگاه‌های خود منتشر و دریافت کنید.",
+    title: "بروکر MQTT ایرانی و ابری برای اینترنت اشیا | mqttcloud.ir",
+    description: "سرور MQTT آماده برای اینترنت اشیا: دستگاه‌ها را با TLS وصل کنید. پلن رایگان، داشبورد فارسی و پرداخت ریالی.",
     images: ["/opengraph-image"],
   },
 };
@@ -45,8 +45,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Persian/RTL in the server HTML: that is what crawlers index for the public site.
+  // The dashboard's EN/FA toggle still switches it on the client (public/theme-init.js, LanguageContext).
   return (
-    <html lang="en" dir="ltr" className="dark" suppressHydrationWarning>
+    <html lang="fa" dir="rtl" className="dark" suppressHydrationWarning>
       <head>
         <Script id="theme-lang-init" strategy="beforeInteractive" src="/theme-init.js" />
         {/* Favicon: src/app/favicon.ico (16px is a simplified cut, 32/48 the full mark) and

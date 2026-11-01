@@ -19,7 +19,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/`, changeFrequency: "weekly", priority: 1.0 },
     { url: `${BASE_URL}/pricing`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${BASE_URL}/blog`, changeFrequency: "weekly", priority: 0.8 },
-    { url: `${BASE_URL}/news`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE_URL}/faq`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE_URL}/contact`, changeFrequency: "yearly", priority: 0.5 },
     { url: `${BASE_URL}/privacy`, changeFrequency: "yearly", priority: 0.3 },
@@ -40,5 +39,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...blogRoutes, ...newsRoutes];
+  // An empty /news page isn't worth crawling; list it once there is news.
+  const newsIndex: MetadataRoute.Sitemap = newsItems.length > 0
+    ? [{ url: `${BASE_URL}/news`, changeFrequency: "weekly", priority: 0.8 }]
+    : [];
+
+  return [...staticRoutes, ...newsIndex, ...blogRoutes, ...newsRoutes];
 }
