@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, Sparkles, Terminal } from "lucide-react";
-import { Reveal } from "@/components/public/shared/Reveal";
+import { HeroRise } from "@/components/public/shared/HeroRise";
 import { Button } from "@/components/public/shared/Button";
 import { BrokerTopology } from "./BrokerTopology";
 import { CLI_COMMAND } from "./signal";
@@ -60,7 +60,7 @@ export default function Hero({
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-8">
           {/* min-w-0: the CLI line is nowrap, and without this it would widen the grid column past a phone's viewport. */}
           <div className="min-w-0 space-y-6 lg:col-span-6">
-            <Reveal forceMotion>
+            <HeroRise>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-white/80 px-3.5 py-1.5 text-xs font-extrabold text-brand-600 backdrop-blur-md dark:border-theme-cyan-500/30 dark:bg-white/[0.04] dark:text-theme-cyan-500">
                   <span className="relative flex h-2 w-2">
@@ -79,26 +79,26 @@ export default function Hero({
                   </Link>
                 )}
               </div>
-            </Reveal>
+            </HeroRise>
 
-            <Reveal forceMotion delay={0.08}>
+            <HeroRise delay={0.08}>
               <h1 className="text-4xl leading-[1.25] font-black tracking-tight text-gray-900 dark:text-white sm:text-5xl xl:text-6xl" style={{ textWrap: "balance" }}>
                 <span className="block">بروکر MQTT خود را</span>
                 <span className="force-motion-gradient-text mt-2 block animate-[gradient-text_6s_ease_infinite] bg-gradient-to-l from-brand-500 via-theme-cyan-500 to-theme-purple-500 bg-[length:200%_auto] bg-clip-text pb-1 text-transparent">
                   در چند ثانیه راه‌اندازی کنید
                 </span>
               </h1>
-            </Reveal>
+            </HeroRise>
 
-            <Reveal forceMotion delay={0.14}>
+            <HeroRise delay={0.14}>
               <p className="max-w-xl text-base leading-relaxed text-gray-600 dark:text-gray-300 sm:text-lg">
                 در <strong className="font-extrabold text-gray-900 dark:text-white">mqttcloud.ir</strong> یک اکانت و دستگاه بسازید، با اتصال رمزنگاری‌شدهٔ{" "}
                 <span className="rounded bg-brand-500/10 px-1.5 py-0.5 font-mono-signal text-xs text-brand-600 dark:text-theme-cyan-500">TLS</span>{" "}
                 به بروکر وصل شوید و پیام‌هایتان را بدون راه‌اندازی زیرساخت، بی‌درنگ بین دستگاه‌ها منتشر و دریافت کنید.
               </p>
-            </Reveal>
+            </HeroRise>
 
-            <Reveal forceMotion delay={0.18}>
+            <HeroRise delay={0.18}>
               <div className="max-w-xl rounded-2xl border border-gray-200 bg-gray-900 p-3.5 shadow-xl dark:border-white/10 dark:bg-gray-950">
                 <div className="mb-2 flex items-center justify-between gap-2 border-b border-white/10 pb-2 text-[11px] text-gray-400">
                   <span className="inline-flex items-center gap-1.5 font-mono-signal text-theme-cyan-500">
@@ -118,9 +118,9 @@ export default function Hero({
                   <span className="text-success-400">$</span> {CLI_COMMAND}
                 </div>
               </div>
-            </Reveal>
+            </HeroRise>
 
-            <Reveal forceMotion delay={0.22}>
+            <HeroRise delay={0.22}>
               <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center">
                 <Button href="/signup" size="lg" className="w-full rounded-2xl sm:w-auto" endIcon={<ArrowLeft className="h-5 w-5" />}>
                   رایگان شروع کنید
@@ -129,13 +129,13 @@ export default function Hero({
                   مشاهده تعرفه‌ها
                 </Button>
               </div>
-            </Reveal>
+            </HeroRise>
           </div>
 
           <div className="min-w-0 lg:col-span-6">
-            <Reveal forceMotion delay={0.12}>
+            <HeroRise delay={0.12}>
               <BrokerTopology forceMotion />
-            </Reveal>
+            </HeroRise>
           </div>
         </div>
       </div>

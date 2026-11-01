@@ -123,7 +123,7 @@ export default function HowItWorks() {
             <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
             نحوه کار
           </span>
-          <h2 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-5xl">چطور کار می‌کند؟</h2>
+          <h2 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-5xl">اتصال دستگاه‌ها به بروکر MQTT</h2>
           <p className="mt-3 text-base text-gray-600 dark:text-gray-300 sm:text-lg">
             در سه قدم ساده، دستگاه‌های خود را به بروکر MQTT وصل کنید.
           </p>

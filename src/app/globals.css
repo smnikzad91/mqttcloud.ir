@@ -296,6 +296,16 @@ html[lang="fa"] [data-sonner-toast] * {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* Hero entrance (shared/HeroRise.tsx): Reveal's fadeUp as pure CSS, so the hero
+   paints and animates at first paint instead of waiting for hydration. */
+@keyframes hero-rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero-rise {
+  animation: hero-rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* Everything except subtrees wrapped in <ForceMotion> (shared/motion.ts), which always animate. */
   *:not(.motion-always, .motion-always *),
