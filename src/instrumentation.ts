@@ -1,6 +1,6 @@
 // Next.js calls register() once per server process on boot (App Router,
 // stable since Next 15). Used here to start the plan-expiry background
-// check — same pattern as nodepass-web's own src/instrumentation.ts.
+// check and the power-telemetry archiver — same pattern as nodepass-web's own src/instrumentation.ts.
 // Set JOBS=off to disable (e.g. local dev with multiple dev-server reloads).
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
@@ -16,4 +16,13 @@ export async function register() {
 
   tick();
   setInterval(tick, CHECK_INTERVAL_MS);
+
+  // Copy the power-control device's telemetry out of the 7-day message log
+  // into permanent history (/admin/power).
+  const { archivePowerReadings } = await import("@/lib/powerMonitor");
+  const archive = () => {
+    archivePowerReadings().catch((err) => console.error("[power archive job]", err));
+  };
+  archive();
+  setInterval(archive, 60 * 1000);
 }

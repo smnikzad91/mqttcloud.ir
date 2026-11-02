@@ -7,7 +7,7 @@ import React from "react";
 import {
   LayoutDashboard, Radio, Activity, MessagesSquare, CreditCard, Wallet,
   UserRound, KeyRound, LifeBuoy, Users, BadgeDollarSign, Ticket, Mail,
-  FileText, Newspaper, Megaphone, CircleQuestionMark, Scale, Search, Share2, Globe,
+  FileText, Newspaper, Megaphone, CircleQuestionMark, Scale, Search, Share2, Globe, Zap,
 } from "lucide-react";
 import { useT } from "@/i18n/useT";
 
@@ -65,6 +65,10 @@ export function useAdminNav(): NavSection[] {
         { href: "/admin/users", label: t("navUsers"), icon: <Users className={ic} /> },
         { href: "/admin/mqtt",  label: t("navMqtt"),  icon: <Radio className={ic} /> },
       ],
+    },
+    {
+      title: t("navGroupDevices"),
+      items: [{ href: "/admin/power", label: t("navPower"), icon: <Zap className={ic} /> }],
     },
     {
       title: t("navGroupBilling"),
