@@ -7,8 +7,8 @@ import { getJson } from "@/lib/getJson";
 import { useTheme } from "@/context/ThemeContext";
 import { RelTime } from "@/components/admin/AdminParts";
 import PowerChart, { POWER_COLORS, niceAxis } from "@/components/admin/PowerChart";
-
-type PowerPoint = { t: number; ch: (number | null)[] };
+import { useTopicLive, type TopicMessage, type ClientEvent } from "@/lib/useTopicLive";
+import { POWER_SOURCE, POWER_CHANNELS as CHANNELS, parseTelemetry } from "@/lib/powerSource";
 import { PageHeader, Panel, StatTile, EmptyState, SkeletonRows, FilterPills, StatusBadge, cn, useFormatNumber } from "@/components/dashboard/ui";
 
 type Live = {
@@ -22,9 +22,8 @@ type History = {
   outages: { from: number; to: number }[];
   stats: { avg: number; max: number }[] | null;
 };
+type PowerPoint = { t: number; ch: (number | null)[] };
 type Range = "6h" | "24h" | "7d" | "30d" | "all";
-
-const CHANNELS = 6;
 
 export default function AdminPowerPage() {
   const t = useT();
@@ -47,15 +46,34 @@ export default function AdminPowerPage() {
     if (d) setHistory(d);
   }), []);
 
+  // WebSocket push from the broker: each telemetry message the moment it's
+  // published, and the device's connect/disconnect. In the 6-hour view (raw
+  // 30 s points) new readings are appended to the chart as they arrive.
+  const onMessage = useCallback((m: TopicMessage) => {
+    const sample = parseTelemetry(m.payload);
+    if (!sample) return;
+    setLive((prev) => ({ device: prev?.device ?? null, latest: { ts: m.at, ...sample } }));
+    if (range === "6h") {
+      setHistory((h) => h && h.range === "6h" ? { ...h, samples: h.samples + 1, points: [...h.points, { t: Date.parse(m.at), ch: sample.ch }] } : h);
+    }
+  }, [range]);
+  const onClient = useCallback((e: ClientEvent) => {
+    if (e.username !== POWER_SOURCE.username || e.clientName !== POWER_SOURCE.clientName) return;
+    setLive((prev) => prev && { ...prev, device: { isOnline: e.event === "connect", lastSeenAt: e.createdAt } });
+  }, []);
+  const pushConnected = useTopicLive(POWER_SOURCE.topic, onMessage, onClient);
+
   useEffect(() => { queueMicrotask(loadLive); }, [loadLive]);
   useEffect(() => { queueMicrotask(() => { setHistory(null); loadHistory(range); }); }, [range, loadHistory]);
-  // Live reading every 10 s (the device publishes every 30 s); history every minute.
+  // Polling is the fallback: every 10 s without the socket, every minute with it
+  // (keeps the device status honest if an event is missed). History and its
+  // stats refresh every minute.
   useEffect(() => {
     const visible = () => document.visibilityState === "visible";
-    const a = setInterval(() => { if (visible()) loadLive(); }, 10_000);
+    const a = setInterval(() => { if (visible()) loadLive(); }, pushConnected ? 60_000 : 10_000);
     const b = setInterval(() => { if (visible()) loadHistory(range); }, 60_000);
     return () => { clearInterval(a); clearInterval(b); };
-  }, [loadLive, loadHistory, range]);
+  }, [loadLive, loadHistory, range, pushConnected]);
 
   const latest = live?.latest;
   const total = latest ? latest.ch.reduce((s, v) => s + v, 0) : null;
@@ -84,9 +102,16 @@ export default function AdminPowerPage() {
     <div>
       <PageHeader
         title={t("powerTitle")}
-        description={<span dir="ltr" className="font-mono">powercontrol / stm32</span>}
+        description={<span dir="ltr" className="font-mono">{POWER_SOURCE.username} / {POWER_SOURCE.clientName}</span>}
         actions={
           <>
+            <span
+              className={cn("inline-flex items-center gap-1.5 text-xs font-medium", pushConnected ? "text-brand-600 dark:text-brand-400" : "text-gray-500 dark:text-gray-400")}
+              title={pushConnected ? t("powerLiveHint") : t("powerPollingHint")}
+            >
+              <span className={cn("h-2 w-2 rounded-full", pushConnected ? "animate-pulse bg-brand-500" : "bg-gray-400")} />
+              {pushConnected ? t("powerLive") : t("powerPolling")}
+            </span>
             {live?.device && (
               <StatusBadge status={live.device.isOnline ? "online" : "offline"} label={live.device.isOnline ? t("mqttOnline") : t("mqttOffline")} pulse={live.device.isOnline} />
             )}
