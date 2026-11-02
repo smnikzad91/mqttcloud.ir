@@ -44,7 +44,8 @@ export function sendOtpSms(phone: string, code: string, clientSmsId: string) {
 }
 
 export function sendWelcomeSms(phone: string, firstName: string, clientSmsId: string) {
-  const text = `${firstName} عزیز، به mqttcloud.ir خوش آمدید!\nحساب شما با موفقیت فعال شد. برای شروع به پنل کاربری خود مراجعه کنید: ${SITE}/dashboard`;
+  // Kept to one SMS segment (70 chars in Persian) for typical names; no link.
+  const text = `${firstName} عزیز، به MQTT Cloud خوش آمدید! حساب شما فعال شد.`;
   return sendSms(phone, text, clientSmsId);
 }
 
