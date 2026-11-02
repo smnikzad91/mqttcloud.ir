@@ -844,6 +844,9 @@ const translations = {
     actLatestNote: "Showing the latest 100 events.",
     msgReceived: "Received",
     msgPayload: "Payload",
+    msgHex: "Raw bytes (hex)",
+    msgBinary: "Binary",
+    msgHexTruncated: "First {n} of {m} bytes",
     msgLive: "Live",
 
     // User subscription (redesign)
@@ -2011,6 +2014,9 @@ const translations = {
     actLatestNote: "۱۰۰ رویداد آخر نمایش داده می‌شود.",
     msgReceived: "زمان دریافت",
     msgPayload: "محتوا",
+    msgHex: "بایت‌های خام (هگز)",
+    msgBinary: "باینری",
+    msgHexTruncated: "{n} بایت اول از {m} بایت",
     msgLive: "زنده",
 
     // User subscription (redesign)

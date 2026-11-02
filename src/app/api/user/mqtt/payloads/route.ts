@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
       clientName: p.clientName,
       topic:      p.topic,
       payload:    p.payload,
+      // Raw bytes (base64) are only stored for non-UTF-8 payloads.
+      raw:        p.raw ? Buffer.from(p.raw.buffer ?? p.raw).toString("base64") : undefined,
+      size:       p.size,
       createdAt:  p.createdAt,
     }))
   );

@@ -11,7 +11,9 @@ import DateRangeFilter from "@/components/user-dashboard/DateRangeFilter";
 import { Switch } from "@/components/dashboard/OrderedList";
 import { PageHeader, Panel, EmptyState, SkeletonRows, Drawer, CopyChip, inputClass, buttonClass, cn, useFormatNumber } from "@/components/dashboard/ui";
 
-type Payload = { id: string; clientName: string; topic: string; payload: string; createdAt: string };
+// `raw` (base64) is only set for payloads that aren't valid UTF-8; `size` is the
+// full length in bytes (missing on messages logged before it was recorded).
+type Payload = { id: string; clientName: string; topic: string; payload: string; raw?: string; size?: number; createdAt: string };
 
 const REFRESH_MS = 10_000;
 
@@ -22,6 +24,39 @@ function pretty(raw: string): { text: string; json: boolean } {
   } catch {
     return { text: raw, json: false };
   }
+}
+
+/** The payload's bytes: the stored raw bytes for binary payloads, else the UTF-8 text. */
+function bytesOf(msg: Payload): Uint8Array {
+  if (msg.raw) return Uint8Array.from(atob(msg.raw), (c) => c.charCodeAt(0));
+  return new TextEncoder().encode(msg.payload);
+}
+
+const hex2 = (b: number) => b.toString(16).padStart(2, "0");
+const printable = (b: number) => (b >= 0x20 && b < 0x7f ? String.fromCharCode(b) : "·");
+
+/** First bytes as hex, for the list preview of binary payloads. */
+function hexPreview(msg: Payload, n = 24) {
+  const bytes = bytesOf(msg);
+  return [...bytes.subarray(0, n)].map(hex2).join(" ") + (bytes.length > n ? " …" : "");
+}
+
+const HEX_ROW = 8;
+
+/** Classic hex dump: offset | bytes | ASCII (non-printable shown as ·). */
+function HexDump({ bytes }: { bytes: Uint8Array }) {
+  const rows: React.ReactNode[] = [];
+  for (let off = 0; off < bytes.length; off += HEX_ROW) {
+    const row = [...bytes.subarray(off, off + HEX_ROW)];
+    rows.push(
+      <div key={off} className="flex gap-4 whitespace-pre">
+        <span className="select-none text-gray-500">{off.toString(16).padStart(4, "0")}</span>
+        <span className="text-[#ffcc80]">{row.map(hex2).join(" ").padEnd(HEX_ROW * 3 - 1)}</span>
+        <span className="text-[#a5d6a7]">{row.map(printable).join("")}</span>
+      </div>,
+    );
+  }
+  return <>{rows}</>;
 }
 
 /** Minimal JSON highlighter for already-pretty-printed text: keys, strings, numbers, literals. */
@@ -63,7 +98,11 @@ function TopicPath({ topic }: { topic: string }) {
 function Inspector({ msg }: { msg: Payload }) {
   const t = useT();
   const { lang } = useLanguage();
-  const shown = pretty(msg.payload);
+  const fmt = useFormatNumber();
+  const bytes = useMemo(() => bytesOf(msg), [msg]);
+  // Binary payloads as decoded text are mostly replacement characters, so show them byte by byte.
+  const shown = msg.raw ? { text: [...bytes].map((c) => (c === 0x0a ? "\n" : printable(c))).join(""), json: false } : pretty(msg.payload);
+  const size = msg.size ?? bytes.length;
   return (
     <div className="space-y-4">
       <div>
@@ -81,12 +120,25 @@ function Inspector({ msg }: { msg: Payload }) {
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <span className="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
             {shown.json && <Braces className="h-3.5 w-3.5" />}{t("msgPayload")}
-            <span dir="ltr" className="font-mono-signal">· {msg.payload.length} B</span>
+            <span dir="ltr" className="font-mono-signal">· {size} B</span>
+            {msg.raw && <span className="rounded bg-warning-50 px-1.5 py-0.5 text-[10px] font-medium text-warning-700 dark:bg-warning-500/15 dark:text-warning-400">{t("msgBinary")}</span>}
           </span>
           <CopyChip value={msg.payload} label={t("copyCardNumber")} />
         </div>
-        <pre dir="ltr" className="max-h-[55vh] overflow-auto rounded-xl border border-gray-800 bg-gray-950 p-4 text-start font-mono-signal text-[12.5px] leading-relaxed text-gray-200">
+        <pre dir="ltr" className="max-h-[40vh] overflow-auto rounded-xl border border-gray-800 bg-gray-950 p-4 text-start font-mono-signal text-[12.5px] leading-relaxed text-gray-200">
           <code>{shown.json ? highlight(shown.text) : shown.text}</code>
+        </pre>
+      </div>
+      <div>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {t("msgHex")}
+            {size > bytes.length && <span className="ms-1.5">· {t("msgHexTruncated").replace("{n}", fmt(bytes.length)).replace("{m}", fmt(size))}</span>}
+          </span>
+          <CopyChip value={[...bytes].map(hex2).join(" ")} label={t("copyCardNumber")} />
+        </div>
+        <pre dir="ltr" className="max-h-[40vh] overflow-auto rounded-xl border border-gray-800 bg-gray-950 p-4 text-start font-mono-signal text-[12.5px] leading-relaxed text-gray-200">
+          <code><HexDump bytes={bytes} /></code>
         </pre>
       </div>
     </div>
@@ -233,7 +285,7 @@ export default function UserMqttMessagesPage() {
                         </div>
                         <div className="mt-1 flex items-center gap-2">
                           <span dir="ltr" className="shrink-0 rounded-md bg-gray-100 px-1.5 py-0.5 font-mono-signal text-[11px] text-gray-600 dark:bg-white/5 dark:text-gray-300">{p.clientName}</span>
-                          <span dir="ltr" className="truncate font-mono-signal text-xs text-gray-500 dark:text-gray-400">{p.payload}</span>
+                          <span dir="ltr" className="truncate font-mono-signal text-xs text-gray-500 dark:text-gray-400">{p.raw ? hexPreview(p) : p.payload}</span>
                         </div>
                       </button>
                     </li>
