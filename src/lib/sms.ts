@@ -4,7 +4,6 @@ import crypto from "crypto";
 // its own alerts. POST /api/v1/sms, Bearer NOTIFYCLOUD_SMS_API_KEY, billed per
 // message to that key's balance. `clientSmsId` is our own idempotency key.
 const BASE = "https://notifycloud.ir/api/v1";
-const SITE = (process.env.NEXTAUTH_URL ?? "https://mqttcloud.ir").replace(/\/$/, "");
 
 export interface SendSmsResult {
   status: boolean;
@@ -49,6 +48,7 @@ export function sendWelcomeSms(phone: string, firstName: string, clientSmsId: st
   return sendSms(phone, text, clientSmsId);
 }
 
+// Plan SMS are kept to one segment (70 chars in Persian) and carry no links.
 const PLAN_NAME_FA: Record<string, string> = {
   free: "رایگان",
   basic: "پایه",
@@ -58,19 +58,19 @@ const PLAN_NAME_FA: Record<string, string> = {
 
 export function sendPlanChangedSms(phone: string, planKey: string, clientSmsId: string) {
   const name = PLAN_NAME_FA[planKey] ?? planKey;
-  const text = `پلن شما در mqttcloud.ir به «${name}» تغییر کرد.\nمدیریت اشتراک: ${SITE}/dashboard/subscription`;
+  const text = `پلن MQTT Cloud شما به «${name}» تغییر کرد.`;
   return sendSms(phone, text, clientSmsId);
 }
 
 export function sendPlanExpiringSoonSms(phone: string, planKey: string, daysLeft: number, clientSmsId: string) {
   const name = PLAN_NAME_FA[planKey] ?? planKey;
-  const text = `پلن «${name}» شما در mqttcloud.ir تا ${daysLeft} روز دیگر منقضی می‌شود.\nبرای تمدید: ${SITE}/dashboard/subscription`;
+  const text = `پلن «${name}» MQTT Cloud شما ${daysLeft.toLocaleString("fa-IR")} روز دیگر تمام می‌شود؛ تمدید کنید.`;
   return sendSms(phone, text, clientSmsId);
 }
 
 export function sendPlanExpiredSms(phone: string, planKey: string, clientSmsId: string) {
   const name = PLAN_NAME_FA[planKey] ?? planKey;
-  const text = `پلن «${name}» شما در mqttcloud.ir منقضی شد و به پلن رایگان تغییر یافت.\nبرای تمدید: ${SITE}/dashboard/subscription`;
+  const text = `پلن «${name}» MQTT Cloud شما تمام شد و حساب به پلن رایگان برگشت.`;
   return sendSms(phone, text, clientSmsId);
 }
 
