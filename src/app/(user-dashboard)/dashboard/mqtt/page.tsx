@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, KeyRound, Cpu, Trash2, RotateCcw, Pencil, Power, Search, Radio, ShieldCheck } from "lucide-react";
+import { Plus, KeyRound, Cpu, Trash2, RotateCcw, Pencil, Power, Search, Radio, ShieldCheck, Copy, Check } from "lucide-react";
 import { useT } from "@/i18n/useT";
 import { useLanguage } from "@/context/LanguageContext";
 import { useMqttLive, type MqttActivityEvent } from "@/context/MqttLiveContext";
@@ -22,6 +22,24 @@ type PlanInfo = { limits: { maxUsers: number; clientsPerUser: number }; usage: {
 
 const iconBtn = "flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white";
 const dangerBtn = cn(iconBtn, "hover:!bg-error-50 hover:!text-error-600 dark:hover:!bg-error-500/10");
+
+/** Icon-only copy button that matches the row's other actions; shows a check once copied. */
+function CopyIconButton({ value }: { value: string }) {
+  const t = useT();
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard?.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1400);
+    }).catch(() => {});
+  };
+  return (
+    <button type="button" className={iconBtn} onClick={copy} title={t("copyCardNumber")} aria-label={`${t("copyCardNumber")} ${value}`}>
+      {copied ? <Check className="h-3.5 w-3.5 text-success-500" /> : <Copy className="h-3.5 w-3.5" />}
+      <span className="sr-only" aria-live="polite">{copied ? t("copied") : ""}</span>
+    </button>
+  );
+}
 
 export default function UserMqttPage() {
   const t = useT();
@@ -279,6 +297,7 @@ export default function UserMqttPage() {
                               </p>
                             </div>
                             <div className="flex shrink-0 transition sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                              <CopyIconButton value={d.clientName} />
                               <button type="button" className={iconBtn} onClick={() => { setRename(d); setRenameValue(d.clientName); }} title={t("mqRename")} aria-label={t("mqRename")}><Pencil className="h-3.5 w-3.5" /></button>
                               <button type="button" className={dangerBtn} onClick={() => setDeleting({ kind: "client", item: d })} title={t("delete")} aria-label={t("delete")}><Trash2 className="h-3.5 w-3.5" /></button>
                             </div>
